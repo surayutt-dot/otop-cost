@@ -2,7 +2,7 @@
 
 :root {
     --bg-dark: #0d1b13;
-    --bg-card: #152b1f; /* สีทึบป้องกันการซ้อนทับหรือพื้นหลังทะลุ */
+    --bg-card: #152b1f;
     --card-border: rgba(82, 183, 136, 0.35);
     --card-border-hover: rgba(82, 183, 136, 0.65);
     --primary: #52b788;
@@ -12,6 +12,8 @@
     --secondary-light: #ffe8d6;
     --accent: #e76f51;
     --gold: #e9c46a;
+    --silver: #d8e2dc;
+    --bronze: #cd7f32;
     --text-main: #ffffff;
     --text-muted: #c8d8cf;
     --success: #52b788;
@@ -49,11 +51,11 @@ body {
 header {
     background: #0f2217;
     border-bottom: 2px solid var(--card-border);
-    padding: 1rem 1.5rem;
+    padding: 0.9rem 1.4rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    position: relative; /* ไม่ใช้ sticky เพื่อไม่ให้บังตารางเวลาเลื่อนจอ */
+    position: relative;
     width: 100%;
     z-index: 10;
 }
@@ -111,13 +113,163 @@ header {
     gap: 0.4rem;
 }
 
+/* Mode Selection Screen */
+.mode-selection-container {
+    max-width: 950px;
+    margin: 2.5rem auto;
+    width: 100%;
+    text-align: center;
+}
+
+.mode-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1.8rem;
+    margin-top: 2rem;
+}
+
+.mode-card {
+    background: #152b1f;
+    border: 2px solid var(--card-border);
+    border-radius: 22px;
+    padding: 2.2rem 1.8rem;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+.mode-card:hover {
+    border-color: var(--gold);
+    transform: translateY(-4px);
+    box-shadow: 0 15px 40px rgba(233, 196, 106, 0.25);
+}
+
+.mode-card-icon {
+    font-size: 3.8rem;
+    margin-bottom: 1.2rem;
+    background: rgba(82, 183, 136, 0.15);
+    width: 90px;
+    height: 90px;
+    border-radius: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--primary);
+}
+
+.mode-card h3 {
+    font-size: 1.6rem;
+    color: var(--gold);
+    margin-bottom: 0.6rem;
+}
+
+.mode-card p {
+    color: var(--text-muted);
+    font-size: 1.05rem;
+    line-height: 1.5;
+    margin-bottom: 1.5rem;
+}
+
+/* Host Lobby Styling */
+.lobby-box {
+    background: #112217;
+    border: 2px solid var(--gold);
+    border-radius: 22px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.4);
+}
+
+.lobby-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    border-bottom: 1.5px solid var(--card-border);
+    padding-bottom: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.pin-display-wrapper {
+    text-align: left;
+}
+
+.pin-label {
+    font-size: 1.1rem;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.pin-number {
+    font-size: 3.8rem;
+    font-weight: 800;
+    color: var(--gold);
+    letter-spacing: 6px;
+    line-height: 1.1;
+    text-shadow: 0 0 20px rgba(233, 196, 106, 0.4);
+}
+
+.qr-box {
+    background: #ffffff;
+    padding: 12px;
+    border-radius: 16px;
+    display: inline-flex;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+}
+
+.team-lobby-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+    margin-top: 1.2rem;
+}
+
+.lobby-team-card {
+    background: rgba(0, 0, 0, 0.35);
+    border: 1.5px dashed var(--card-border);
+    border-radius: 16px;
+    padding: 1.2rem 1rem;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.lobby-team-card.connected {
+    border-style: solid;
+    border-color: var(--success);
+    background: rgba(82, 183, 136, 0.18);
+    box-shadow: 0 0 18px rgba(82, 183, 136, 0.35);
+}
+
+.lobby-team-card h4 {
+    font-size: 1.2rem;
+    margin-bottom: 0.3rem;
+    color: #fff;
+}
+
+.lobby-team-status {
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.lobby-team-status.connected {
+    color: var(--success);
+}
+
+.lobby-team-status.waiting {
+    color: var(--text-muted);
+}
+
 /* Buttons */
 .btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    padding: 0.7rem 1.2rem;
+    padding: 0.75rem 1.4rem;
     font-size: 1.05rem;
     font-weight: 600;
     font-family: var(--font-family);
@@ -153,6 +305,12 @@ header {
     border-color: var(--primary);
 }
 
+.btn-accent {
+    background: linear-gradient(135deg, #e76f51 0%, #f4a261 100%);
+    color: #fff;
+    box-shadow: 0 4px 15px rgba(231, 111, 81, 0.4);
+}
+
 .btn-sm {
     padding: 0.45rem 0.9rem;
     font-size: 0.95rem;
@@ -164,9 +322,67 @@ header {
 main {
     max-width: 1240px;
     width: 100%;
-    margin: 1.5rem auto;
-    padding: 0 1.2rem;
+    margin: 1.2rem auto;
+    padding: 0 1rem;
     flex: 1;
+}
+
+/* Team Live Status Monitor (บนจอกลาง) */
+.team-live-monitor {
+    background: #112217;
+    border: 1.5px solid var(--card-border);
+    border-radius: 18px;
+    padding: 1.2rem;
+    margin-bottom: 1.5rem;
+}
+
+.monitor-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+}
+
+.monitor-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.8rem;
+}
+
+.monitor-card {
+    background: rgba(0, 0, 0, 0.35);
+    border: 1.5px solid var(--card-border);
+    border-radius: 14px;
+    padding: 0.9rem 0.8rem;
+    text-align: center;
+    transition: all 0.2s ease;
+}
+
+.monitor-card.submitted {
+    border-color: var(--success);
+    background: rgba(82, 183, 136, 0.18);
+}
+
+.monitor-card .m-name {
+    font-weight: 700;
+    font-size: 1.05rem;
+    margin-bottom: 0.3rem;
+    color: #fff;
+}
+
+.monitor-card .m-status {
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.monitor-card .m-status.ready {
+    color: var(--success);
+}
+
+.monitor-card .m-status.waiting {
+    color: var(--warning);
 }
 
 /* Dashboard Stat Cards */
@@ -174,7 +390,7 @@ main {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     gap: 1rem;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.4rem;
     width: 100%;
 }
 
@@ -249,7 +465,7 @@ main {
     border-left: 6px solid var(--gold);
     border-radius: 16px;
     padding: 1.2rem 1.4rem;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.4rem;
     box-shadow: 0 4px 18px rgba(0, 0, 0, 0.3);
     display: flex;
     align-items: flex-start;
@@ -304,7 +520,7 @@ main {
     align-items: center;
     border-bottom: 1.5px solid var(--card-border);
     padding-bottom: 1rem;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.4rem;
     flex-wrap: wrap;
     gap: 0.8rem;
     width: 100%;
@@ -328,7 +544,14 @@ main {
     width: 100%;
 }
 
-/* Shop / Production Cards */
+.grid-2 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.4rem;
+    width: 100%;
+}
+
+/* Cards */
 .prep-card {
     background: #183023;
     border: 1.5px solid rgba(82, 183, 136, 0.3);
@@ -565,11 +788,11 @@ select.form-select option {
     border: 1.5px solid var(--gold);
 }
 
-/* Financial Tables - ป้องกันการซ้อนทับ 100% */
+/* Financial Tables */
 .financial-table {
     width: 100%;
     border-collapse: collapse;
-    table-layout: fixed; /* ล็อกความกว้างคอลัมน์ไม่ให้ชนกัน */
+    table-layout: fixed;
     margin-top: 0.6rem;
 }
 
@@ -589,7 +812,7 @@ select.form-select option {
 .financial-table td:last-child {
     width: 38%;
     text-align: right;
-    white-space: nowrap; /* ไม่ให้ตัวเลขตัดบรรทัด */
+    white-space: nowrap;
 }
 
 .financial-table tr {
@@ -600,7 +823,92 @@ select.form-select option {
     border-bottom: none;
 }
 
-/* Feedback Logs - ปลดล็อกให้แสดงผลยาวต่อเนื่อง อ่านง่าย สบายตา ไม่ต้องเลื่อนในกรอบเล็ก */
+/* Leaderboard */
+.leaderboard-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    background: #112217;
+    border: 1.5px solid var(--card-border);
+    border-radius: 16px;
+    padding: 0.8rem;
+    margin-top: 1rem;
+}
+
+.leaderboard-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 650px;
+}
+
+.leaderboard-table th {
+    background: rgba(0, 0, 0, 0.35);
+    color: var(--gold);
+    font-size: 1rem;
+    font-weight: 700;
+    padding: 0.9rem 0.6rem;
+    text-align: center;
+    border-bottom: 2px solid var(--card-border);
+}
+
+.leaderboard-table td {
+    padding: 0.85rem 0.6rem;
+    font-size: 1.05rem;
+    text-align: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    vertical-align: middle;
+}
+
+.leaderboard-table tr:hover {
+    background: rgba(82, 183, 136, 0.1);
+}
+
+.leaderboard-table tr.rank-1 {
+    background: rgba(233, 196, 106, 0.15);
+    border-left: 5px solid var(--gold);
+}
+
+.leaderboard-table tr.rank-2 {
+    background: rgba(216, 226, 220, 0.12);
+    border-left: 5px solid var(--silver);
+}
+
+.leaderboard-table tr.rank-3 {
+    background: rgba(205, 127, 50, 0.12);
+    border-left: 5px solid var(--bronze);
+}
+
+.rank-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    font-weight: 800;
+    font-size: 1.2rem;
+}
+
+.rank-badge.gold {
+    background: linear-gradient(135deg, #e9c46a, #d4a373);
+    color: #000;
+}
+
+.rank-badge.silver {
+    background: linear-gradient(135deg, #ffffff, #b0bec5);
+    color: #000;
+}
+
+.rank-badge.bronze {
+    background: linear-gradient(135deg, #e07a5f, #cd7f32);
+    color: #fff;
+}
+
+.rank-badge.normal {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+/* Feedback Logs */
 .result-log {
     list-style: none;
     display: flex;
@@ -631,7 +939,50 @@ select.form-select option {
     background: rgba(230, 57, 70, 0.18);
 }
 
-/* Modal for Educational Glossary */
+/* Podium & Winner Screen */
+.podium-container {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 1.2rem;
+    margin: 2rem 0;
+    flex-wrap: wrap;
+}
+
+.podium-step {
+    background: #183023;
+    border: 2px solid var(--card-border);
+    border-radius: 18px;
+    padding: 1.5rem 1rem;
+    text-align: center;
+    width: 180px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+}
+
+.podium-step.step-1 {
+    order: 2;
+    min-height: 250px;
+    border-color: var(--gold);
+    background: linear-gradient(180deg, #2a4732 0%, #183023 100%);
+    box-shadow: 0 0 25px rgba(233, 196, 106, 0.4);
+}
+
+.podium-step.step-2 {
+    order: 1;
+    min-height: 210px;
+    border-color: var(--silver);
+}
+
+.podium-step.step-3 {
+    order: 3;
+    min-height: 180px;
+    border-color: var(--bronze);
+}
+
+/* Modal */
 .modal-backdrop {
     position: fixed;
     top: 0;
@@ -651,7 +1002,7 @@ select.form-select option {
     background: #12241a;
     border: 2px solid var(--primary);
     border-radius: 20px;
-    max-width: 650px;
+    max-width: 750px;
     width: 100%;
     max-height: 88vh;
     overflow-y: auto;
@@ -685,28 +1036,6 @@ select.form-select option {
     line-height: 1.5;
 }
 
-/* End Game Card */
-.end-game-card {
-    text-align: center;
-    padding: 2.5rem 1.2rem;
-}
-
-.grade-badge {
-    width: 110px;
-    height: 110px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--gold) 0%, var(--accent) 100%);
-    color: #fff;
-    font-size: 3.4rem;
-    font-weight: 800;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 1.4rem auto;
-    box-shadow: 0 0 30px rgba(233, 196, 106, 0.5);
-    border: 4px solid #fff;
-}
-
 /* Utilities */
 .hide {
     display: none !important;
@@ -721,9 +1050,7 @@ select.form-select option {
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* ==========================================
-   OPTIMIZATION FOR MOBILE PHONES (หน้าจอมือถือ)
-   ========================================== */
+/* Mobile Responsiveness */
 @media (max-width: 768px) {
     html {
         font-size: 18px;
@@ -763,25 +1090,18 @@ select.form-select option {
         margin: 1rem auto;
     }
 
-    /* บังคับให้การ์ดและแดชบอร์ดเรียงเป็น 1 คอลัมน์เดี่ยว ไม่ซ้อนทับกัน */
-    .dashboard-bar {
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
+    .dashboard-bar, .grid-3, .grid-2 {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 0.9rem;
     }
 
-    .stat-card {
-        padding: 1rem 1.1rem;
+    .stat-card, .prep-card {
+        padding: 1.1rem 1rem;
     }
 
     .stat-info .value {
         font-size: 1.6rem;
-    }
-
-    .grid-3 {
-        display: flex;
-        flex-direction: column;
-        gap: 1.2rem;
     }
 
     .glass-panel {
@@ -791,10 +1111,6 @@ select.form-select option {
 
     .panel-title {
         font-size: 1.25rem;
-    }
-
-    .prep-card {
-        padding: 1.1rem 0.9rem;
     }
 
     .quantity-control {
@@ -842,4 +1158,188 @@ select.form-select option {
     .modal-card {
         padding: 1.4rem 1rem;
     }
+
+    .podium-container {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .podium-step {
+        width: 100%;
+        min-height: auto !important;
+        order: initial !important;
+    }
+
+    .pin-number {
+        font-size: 2.8rem;
+    }
 }
+
+/* ==========================================
+   LIVE MULTIPLAYER & STUDENT MOBILE STYLES
+   ========================================== */
+.badge-live {
+    background: #e76f51;
+    color: #fff;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 0.2rem 0.6rem;
+    border-radius: 20px;
+    letter-spacing: 1px;
+    animation: pulseGlow 1.5s infinite;
+    display: inline-block;
+}
+
+@keyframes pulseGlow {
+    0% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.75; transform: scale(1.05); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+.student-card-container {
+    max-width: 580px;
+    margin: 1.5rem auto;
+    width: 100%;
+}
+
+.student-join-box {
+    background: #152b1f;
+    border: 2px solid var(--gold);
+    border-radius: 22px;
+    padding: 2rem 1.6rem;
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5);
+    text-align: center;
+}
+
+.student-join-box h2 {
+    color: var(--gold);
+    font-size: 1.6rem;
+    margin-bottom: 0.5rem;
+}
+
+.student-join-box p {
+    color: var(--text-muted);
+    font-size: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.form-group-student {
+    text-align: left;
+    margin-bottom: 1.2rem;
+}
+
+.form-group-student label {
+    display: block;
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+    color: var(--primary-light);
+}
+
+.input-pin {
+    width: 100%;
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: 8px;
+    text-align: center;
+    background: rgba(0, 0, 0, 0.5);
+    border: 2px solid var(--primary);
+    border-radius: 14px;
+    color: var(--gold);
+    padding: 0.7rem;
+    outline: none;
+    box-sizing: border-box;
+}
+
+.input-pin:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 15px rgba(233, 196, 106, 0.4);
+}
+
+.input-text-student {
+    width: 100%;
+    font-size: 1.15rem;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1.5px solid var(--card-border);
+    border-radius: 12px;
+    color: #fff;
+    padding: 0.8rem 1rem;
+    outline: none;
+    box-sizing: border-box;
+}
+
+.input-text-student:focus {
+    border-color: var(--primary);
+}
+
+.student-waiting-box {
+    background: #152b1f;
+    border: 2px solid var(--primary);
+    border-radius: 20px;
+    padding: 2.2rem 1.6rem;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+.student-waiting-icon {
+    font-size: 3.5rem;
+    margin-bottom: 1rem;
+    display: inline-block;
+    animation: bounceSlow 2s infinite ease-in-out;
+}
+
+@keyframes bounceSlow {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+.student-submitted-box {
+    background: rgba(82, 183, 136, 0.15);
+    border: 2px solid var(--success);
+    border-radius: 20px;
+    padding: 2rem 1.5rem;
+    text-align: center;
+    margin-top: 1.2rem;
+}
+
+.student-rank-hero {
+    background: linear-gradient(135deg, rgba(233, 196, 106, 0.25) 0%, rgba(82, 183, 136, 0.2) 100%);
+    border: 2px solid var(--gold);
+    border-radius: 20px;
+    padding: 1.5rem;
+    text-align: center;
+    margin-bottom: 1.4rem;
+}
+
+.student-rank-number {
+    font-size: 3.2rem;
+    font-weight: 800;
+    color: var(--gold);
+    line-height: 1;
+    margin: 0.3rem 0;
+}
+
+.host-status-ribbon {
+    background: #0f2419;
+    border: 1.5px solid var(--gold);
+    border-radius: 16px;
+    padding: 1rem 1.4rem;
+    margin-bottom: 1.4rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+}
+
+.host-pin-tag {
+    background: rgba(233, 196, 106, 0.2);
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    padding: 0.35rem 0.9rem;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 1.15rem;
+    letter-spacing: 2px;
+}
+

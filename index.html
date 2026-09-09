@@ -3,11 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>สมุดทำมือ ไทคูน (Craft Notebook Tycoon) - ฝึกคิดราคาต้นทุนและกำไร สมุดทำมือชุมชนบ้านโมกุล</title>
-    <link rel="stylesheet" href="style.css?v=3">
+    <title>แข่งขันสมุดทำมือ 7 ทีม (7-Team Craft Tycoon) - ระบบจำลองธุรกิจและประลองคิดต้นทุน-กำไร</title>
+    <link rel="stylesheet" href="style.css?v=7teams_live_2">
+    <!-- MQTT Client over WebSocket (Free & Public Cloud Broker) -->
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <!-- QRCode Generator CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
-        /* บังคับปลดล็อกกล่องเสียงสะท้อนจากลูกค้าให้ยาวต่อเนื่องทันที ไม่ติดแคชเบราว์เซอร์ */
+        /* บังคับปลดล็อกกล่องเสียงสะท้อนจากลูกค้าให้ยาวต่อเนื่อง ไม่ติดแคช */
         #customer-feedback,
+        #student-customer-feedback,
+        #host-customer-feedback,
         .result-log {
             max-height: none !important;
             height: auto !important;
@@ -21,19 +27,6 @@
             width: 100% !important;
             margin-top: 1.4rem !important;
         }
-        .grid-2 {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1.4rem;
-            width: 100%;
-        }
-        @media (max-width: 768px) {
-            .grid-2 {
-                display: flex !important;
-                flex-direction: column !important;
-                gap: 1.2rem !important;
-            }
-        }
     </style>
 </head>
 <body>
@@ -41,425 +34,1104 @@
     <!-- HEADER NAVIGATION -->
     <header>
         <div class="brand-wrapper">
-            <div class="brand-icon">📖</div>
+            <div class="brand-icon">🏆</div>
             <div class="brand-text">
-                <h1>สมุดทำมือ ไทคูน</h1>
-                <span>ระบบจำลองธุรกิจ & ฝึกคิดราคาต้นทุน-กำไร "สมุดทำมือชุมชนบ้านโมกุล"</span>
+                <h1>แข่งขันสมุดทำมือ 7 ทีม</h1>
+                <span>ระบบจำลองธุรกิจ & ประลองคิดต้นทุน-กำไร "สมุดทำมือชุมชนบ้านโมกุล"</span>
             </div>
         </div>
 
         <div class="header-actions">
-            <div id="day-indicator" class="day-badge">📅 วันที่: 1 / 7</div>
-            <button id="btn-knowledge" class="btn btn-secondary btn-sm" title="คลิกเพื่อดูคู่มือและสูตรการคิดต้นทุน">📖 คลังความรู้ต้นทุน</button>
-            <button id="btn-restart" class="btn btn-secondary btn-sm">🔄 เริ่มต้นใหม่</button>
+            <div id="role-badge" class="day-badge hide" style="background: rgba(233, 196, 106, 0.25); border-color: var(--gold); color: var(--gold);">โหมด</div>
+            <div id="day-indicator" class="day-badge hide">📅 วันแข่งที่: 1 / 7</div>
+            <button id="btn-mode-switch" class="btn btn-secondary btn-sm" title="กลับสู่หน้าเลือกโหมด">🔀 สลับโหมด</button>
+            <button id="btn-knowledge" class="btn btn-secondary btn-sm" title="คลิกเพื่อดูสูตรการคิดต้นทุนและกำไร">📖 คู่มือต้นทุน</button>
+            <button id="btn-restart" class="btn btn-secondary btn-sm">🔄 รีเซ็ต</button>
         </div>
     </header>
 
     <main>
-        <!-- TOP DASHBOARD METRICS -->
-        <div class="dashboard-bar">
-            <div class="stat-card">
-                <div class="stat-icon">💰</div>
-                <div class="stat-info">
-                    <div class="label">เงินทุนหมุนเวียนในมือ</div>
-                    <div class="value" id="val-cash">฿1,500</div>
-                </div>
+        <!-- ==========================================
+             VIEW 0: MODE SELECTION (เลือกโหมดเริ่มต้น)
+             ========================================== -->
+        <section id="view-mode-select" class="mode-selection-container fade-in">
+            <div style="margin-bottom: 1.5rem;">
+                <span class="badge-live" style="margin-bottom: 0.8rem;">⚡ KAHOOT-STYLE LIVE MULTIPLAYER</span>
+                <h2 style="font-size: 2.2rem; color: var(--gold); margin-bottom: 0.4rem;">เลือกโหมดการแข่งขัน</h2>
+                <p style="color: var(--text-muted); font-size: 1.15rem; max-width: 650px; margin: 0 auto;">
+                    ระบบจำลองธุรกิจสมุดทำมือ 7 ทีม สามารถเล่นแบบเชื่อมต่อสดผ่านมือถือ หรือเล่นบนเครื่องเดียวได้ทันที
+                </p>
             </div>
 
-            <div class="stat-card accent-card">
-                <div class="stat-icon">⭐</div>
-                <div class="stat-info">
-                    <div class="label">ชื่อเสียง & ความเชื่อมั่น OTOP</div>
-                    <div class="value" id="val-reputation">50%</div>
+            <div class="mode-grid">
+                <!-- Card 1: Host Projector View -->
+                <div class="mode-card" onclick="enterHostMode()">
+                    <div class="mode-card-icon">🖥️</div>
+                    <h3>จอกลางอาจารย์</h3>
+                    <div style="font-size: 0.9rem; color: var(--gold); font-weight: 700; margin-bottom: 0.6rem;">(Host Projector)</div>
+                    <p>เปิดฉายขึ้นจอโปรเจกเตอร์หน้าห้อง สุ่ม Room PIN 4 หลัก และ QR Code ให้นักเรียนสแกนเชื่อมต่อ ดูตัวเลขส่งสดๆ และฉาย Leaderboard</p>
+                    <button class="btn btn-primary" style="width: 100%;">เปิดจอกลางอาจารย์ ➔</button>
+                </div>
+
+                <!-- Card 2: Student Mobile View -->
+                <div class="mode-card" onclick="enterStudentMode()">
+                    <div class="mode-card-icon">📱</div>
+                    <h3>เข้าเล่นด้วยมือถือ</h3>
+                    <div style="font-size: 0.9rem; color: var(--gold); font-weight: 700; margin-bottom: 0.6rem;">(Student Mobile)</div>
+                    <p>สำหรับนักเรียนตัวแทนทีม 1 - 7 เปิดบนมือถือ สแกน QR Code หรือใส่รหัส PIN เพื่อวางแผนและส่งตัวเลขเข้าจอกลางแบบเรียลไทม์</p>
+                    <button class="btn btn-primary" style="width: 100%; background: linear-gradient(135deg, #f4a261, #e76f51);">เข้าสู่โหมดมือถือ ➔</button>
+                </div>
+
+                <!-- Card 3: Single Device Offline View -->
+                <div class="mode-card" onclick="enterSingleMode()">
+                    <div class="mode-card-icon">🕹️</div>
+                    <h3>โหมดเล่นเครื่องเดียว</h3>
+                    <div style="font-size: 0.9rem; color: var(--primary-light); font-weight: 700; margin-bottom: 0.6rem;">(Single Device / Offline)</div>
+                    <p>เล่นบนคอมพิวเตอร์หรือแท็บเล็ตเครื่องเดียว สลับแถบ 7 ทีม วางแผนได้ทันทีโดยไม่ต้องต่ออินเทอร์เน็ต เหมาะสำหรับสาธิตหน้าห้อง</p>
+                    <button class="btn btn-secondary" style="width: 100%;">เริ่มเล่นเครื่องเดียว ➔</button>
                 </div>
             </div>
+        </section>
 
-            <div class="stat-card community-card">
-                <div class="stat-icon">🤝</div>
-                <div class="stat-info">
-                    <div class="label">กองทุนพัฒนาหมู่บ้านสะสม</div>
-                    <div class="value" id="val-village-fund">฿0</div>
-                </div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-icon">📦</div>
-                <div class="stat-info">
-                    <div class="label">สต็อกวัตถุดิบคงคลัง</div>
-                    <div class="value" id="val-stock-summary" style="font-size: 0.95rem; font-weight: 600; line-height: 1.4;">กำลังโหลด...</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- SPECIAL EVENT BANNER -->
-        <div id="event-banner" class="event-banner hide">
-            <div class="event-icon-box" id="event-icon">☀️</div>
-            <div class="event-content">
-                <h3 id="event-title">เหตุการณ์ประจำวัน</h3>
-                <p id="event-description">คำอธิบายสถานการณ์ตลาดและปัจจัยทางเศรษฐกิจชุมชนประจำวัน</p>
-            </div>
-        </div>
-
-        <!-- PHASE 1: PREPARATION & PRICING PANEL -->
-        <div id="panel-prep" class="glass-panel fade-in">
-            <div class="panel-header">
-                <div class="panel-title">
-                    <span>⚙️ วางแผนการผลิตและคำนวณต้นทุน:</span>
-                    <span style="color: var(--gold); font-size: 1.25rem;">สมุดทำมือชุมชนบ้านโมกุล (งานหัตถศิลป์เย็บกี่)</span>
-                </div>
-            </div>
-
-            <div class="grid-3">
-                <!-- 1. Purchase Materials -->
-                <div class="prep-card">
-                    <div>
-                        <h3>🛒 1. จัดซื้อวัตถุดิบทำสมุด</h3>
-                        <p class="prep-subtitle">สั่งซื้อวัตถุดิบเข้าสต็อกเพื่อรองรับการเข้าเล่มสมุดประจำวัน</p>
-
-                        <!-- Material 1 Paper -->
-                        <div class="material-row">
-                            <div class="material-header">
-                                <span class="material-name">1. กระดาษถนอมสายตา</span>
-                                <span class="material-cost" id="price-buy-paper">฿0.40 / แผ่น</span>
-                            </div>
-                            <div class="quantity-control">
-                                <button class="btn btn-secondary" onclick="adjustBuy('paper', -50)">-50</button>
-                                <button class="btn btn-secondary" onclick="adjustBuy('paper', -10)">-10</button>
-                                <input type="number" id="buy-paper" class="input-number" value="0" min="0" readonly>
-                                <button class="btn btn-secondary" onclick="adjustBuy('paper', 10)">+10</button>
-                                <button class="btn btn-secondary" onclick="adjustBuy('paper', 50)">+50</button>
-                            </div>
-                        </div>
-
-                        <!-- Material 2 Cover -->
-                        <div class="material-row">
-                            <div class="material-header">
-                                <span class="material-name">2. ปกแข็งผ้าทอพื้นเมือง</span>
-                                <span class="material-cost" id="price-buy-cover">฿16.0 / ปก</span>
-                            </div>
-                            <div class="quantity-control">
-                                <button class="btn btn-secondary" onclick="adjustBuy('cover', -5)">-5</button>
-                                <button class="btn btn-secondary" onclick="adjustBuy('cover', -1)">-1</button>
-                                <input type="number" id="buy-cover" class="input-number" value="0" min="0" readonly>
-                                <button class="btn btn-secondary" onclick="adjustBuy('cover', 1)">+1</button>
-                                <button class="btn btn-secondary" onclick="adjustBuy('cover', 5)">+5</button>
-                            </div>
-                        </div>
-
-                        <!-- Material 3 Binding -->
-                        <div class="material-row">
-                            <div class="material-header">
-                                <span class="material-name">3. ด้ายเย็บกี่ & กาว & สายคาด</span>
-                                <span class="material-cost" id="price-buy-binding">฿7.0 / ชุด</span>
-                            </div>
-                            <div class="quantity-control">
-                                <button class="btn btn-secondary" onclick="adjustBuy('binding', -5)">-5</button>
-                                <button class="btn btn-secondary" onclick="adjustBuy('binding', -1)">-1</button>
-                                <input type="number" id="buy-binding" class="input-number" value="0" min="0" readonly>
-                                <button class="btn btn-secondary" onclick="adjustBuy('binding', 1)">+1</button>
-                                <button class="btn btn-secondary" onclick="adjustBuy('binding', 5)">+5</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div style="border-top: 1.5px dashed rgba(82, 183, 136, 0.4); padding-top: 0.9rem; margin-top: 1rem; display: flex; justify-content: space-between; align-items: center;">
-                        <span style="font-size: 1rem; color: var(--text-muted);">ยอดสั่งซื้อวันนี้:</span>
-                        <span id="total-purchase" style="color: var(--gold); font-size: 1.35rem; font-weight: 800;">฿0.00</span>
-                    </div>
-                </div>
-
-                <!-- 2. Recipe & Cost Breakdown -->
-                <div class="prep-card">
-                    <div>
-                        <h3>🧪 2. กำหนดสเปกสมุด & โครงสร้างต้นทุน</h3>
-                        <p class="prep-subtitle">สมุดยิ่งหนา ยิ่งเขียนจุใจ ลูกค้ายิ่งชอบ แต่ต้นทุนกระดาษจะสูงขึ้น</p>
-
-                        <!-- Slider Paper Sheets -->
-                        <div class="slider-group">
-                            <div class="slider-label">
-                                <span>จำนวนกระดาษต่อเล่ม:</span>
-                                <span class="slider-val"><span id="lbl-rec-paper">60</span> แผ่น</span>
-                            </div>
-                            <input type="range" id="rec-paper" min="30" max="100" step="5" value="60">
-                            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.4rem;">* กระดาษถนอมสายตา 80 แกรม เขียนลื่น หมึกไม่ซึม</p>
-                        </div>
-
-                        <!-- Fixed specs -->
-                        <div class="slider-group" style="padding: 0.7rem 1rem;">
-                            <div class="slider-label" style="margin-bottom: 0;">
-                                <span>ปกแข็งผ้าทอ & อุปกรณ์เข้าเล่ม:</span>
-                                <span class="slider-val">อย่างละ 1 ชิ้น / เล่ม</span>
-                            </div>
-                        </div>
-
-                        <!-- Live Cost Breakdown Box -->
-                        <div class="cost-calculator-box">
-                            <div style="font-size: 0.95rem; font-weight: 700; color: var(--primary-light); margin-bottom: 0.6rem;">
-                                📋 โครงสร้างต้นทุนการผลิตสมุด 1 เล่ม (Unit Cost):
-                            </div>
-                            <div class="calc-row">
-                                <span style="color: var(--text-muted);">- ค่ากระดาษถนอมสายตา:</span>
-                                <span id="calc-cost-paper">฿0.00</span>
-                            </div>
-                            <div class="calc-row">
-                                <span style="color: var(--text-muted);">- ค่าปกแข็งผ้าทอบ้านโมกุล:</span>
-                                <span id="calc-cost-cover">฿0.00</span>
-                            </div>
-                            <div class="calc-row">
-                                <span style="color: var(--text-muted);">- ค่าด้ายเย็บกี่ & กาว & ปลอก:</span>
-                                <span id="calc-cost-binding">฿0.00</span>
-                            </div>
-                            <div class="calc-row">
-                                <span style="color: var(--text-muted);">- ค่าแรงงานฝีมือเย็บเล่มชุมชน:</span>
-                                <span id="calc-cost-labor">฿15.00</span>
-                            </div>
-                            <div class="calc-row total">
-                                <span>รวมต้นทุนผลิตต่อเล่ม:</span>
-                                <span id="calc-total-unit-cost" style="color: #fff;">฿0.00</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 3. Pricing, Profit & Marketing -->
-                <div class="prep-card">
-                    <div>
-                        <h3>📢 3. ตั้งราคาขาย & ช่องทางการตลาด</h3>
-                        <p class="prep-subtitle">ตั้งราคาขายให้มีกำไรคุ้มค่าแรง และเลือกช่องทางกระจายสินค้า</p>
-
-                        <div style="margin-bottom: 1.2rem;">
-                            <label style="display: block; font-size: 1rem; font-weight: 600; margin-bottom: 0.4rem; color: var(--text-muted);">
-                                ราคาขายสมุดทำมือ (บาท / เล่ม)
-                            </label>
-                            <div style="display: flex; align-items: center; gap: 0.7rem;">
-                                <input type="number" id="price-per-unit" class="input-number" style="width: 120px; font-size: 1.35rem;" value="89" min="20" max="350">
-                                <span style="font-weight: 700; font-size: 1.15rem;">บาท</span>
-                            </div>
-                        </div>
-
-                        <!-- Live Profit & Break-Even Widget -->
-                        <div class="cost-calculator-box" style="background: rgba(233, 196, 106, 0.1); border-color: var(--gold);">
-                            <div style="font-size: 0.95rem; font-weight: 700; color: var(--gold); margin-bottom: 0.6rem;">
-                                💡 วิเคราะห์ผลกำไร & จุดคุ้มทุน:
-                            </div>
-                            <div class="calc-row">
-                                <span style="color: var(--text-muted);">กำไรขั้นต้นต่อเล่ม:</span>
-                                <span id="calc-profit-unit" style="font-weight: 800; font-size: 1.2rem;">฿0.00</span>
-                            </div>
-                            <div class="calc-row">
-                                <span style="color: var(--text-muted);">สถานะอัตรากำไร (Margin):</span>
-                                <span id="margin-badge" class="margin-pill good">คำนวณ...</span>
-                            </div>
-                            <div class="calc-row">
-                                <span style="color: var(--text-muted);">จุดคุ้มทุนค่าการตลาดวันนี้:</span>
-                                <span id="calc-breakeven" style="font-weight: 700; color: var(--gold);">0 เล่ม</span>
-                            </div>
-                        </div>
-
-                        <!-- Marketing Channel -->
-                        <div style="margin-top: 1.2rem;">
-                            <label style="display: block; font-size: 0.95rem; font-weight: 600; margin-bottom: 0.4rem; color: var(--text-muted);">
-                                ช่องทางการโปรโมท & จัดจำหน่ายวันนี้:
-                            </label>
-                            <select id="marketing-select" class="form-select">
-                                <!-- Generated dynamically -->
-                            </select>
-                        </div>
-                    </div>
-
-                    <div style="margin-top: 1.5rem;">
-                        <button id="btn-open-market" class="btn btn-primary" style="width: 100%; padding: 0.9rem; font-size: 1.15rem;">
-                            🚀 เริ่มเปิดรอบการผลิตและจำหน่ายวันนี้
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- PHASE 2: RESULTS PANEL -->
-        <div id="panel-results" class="glass-panel fade-in hide">
-            <div class="panel-header">
-                <div class="panel-title" style="color: var(--success);">
-                    <span>📊 สรุปยอดจำหน่ายสมุดทำมือและงบการเงินประจำวัน</span>
-                </div>
-            </div>
-
-            <!-- แถวที่ 1: ตารางสรุปงบการเงิน และ ตารางวัตถุดิบคงเหลือ -->
-            <div class="grid-2">
-                <!-- 1. Financial Summary -->
-                <div class="prep-card">
-                    <h3>💰 สรุปงบการเงินประจำวัน</h3>
-                    <table class="financial-table" style="margin-top: 0.8rem;">
-                        <tr>
-                            <td>ลูกค้าที่สนใจซื้อทั้งหมด</td>
-                            <td id="res-total-demand" style="text-align: right; font-weight:700;">0 คน</td>
-                        </tr>
-                        <tr>
-                            <td>ยอดจำหน่ายสมุดได้จริง</td>
-                            <td id="res-sales-qty" style="text-align: right; font-weight:800; color: var(--success); font-size: 1.25rem;">0 เล่ม</td>
-                        </tr>
-                        <tr style="border-top: 2px solid rgba(82, 183, 136, 0.4);">
-                            <td>รายรับจากการขาย (Revenue)</td>
-                            <td id="res-revenue" style="text-align: right; font-weight:700; color: var(--success);">+฿0.00</td>
-                        </tr>
-                        <tr>
-                            <td>ค่าจัดซื้อกระดาษ/ปก/อุปกรณ์</td>
-                            <td id="res-cost-purchases" style="text-align: right; color: var(--danger);">-฿0.00</td>
-                        </tr>
-                        <tr>
-                            <td>ค่างบโฆษณา/ช่องทางการตลาด</td>
-                            <td id="res-cost-marketing" style="text-align: right; color: var(--danger);">-฿0.00</td>
-                        </tr>
-                        <tr>
-                            <td>หักสมทบกองทุนพัฒนาหมู่บ้าน (10%)</td>
-                            <td id="res-village-fund-deduct" style="text-align: right; color: var(--warning);">-฿0.00</td>
-                        </tr>
-                        <tr style="border-top: 2px solid var(--card-border);">
-                            <td style="font-weight: 800; font-size: 1.15rem;">กำไรสุทธิประจำวัน</td>
-                            <td id="res-net-profit" style="text-align: right; font-weight:800; font-size: 1.35rem;">฿0.00</td>
-                        </tr>
-                    </table>
-                </div>
-
-                <!-- 2. Inventory Balance -->
-                <div class="prep-card">
-                    <h3>📦 วัตถุดิบคงเหลือสะสมในคลัง</h3>
-                    <table class="financial-table" style="margin-top: 0.8rem;">
-                        <tr>
-                            <td>กระดาษถนอมสายตา</td>
-                            <td id="res-stock-paper" style="text-align: right; font-weight: 700;">0 แผ่น</td>
-                        </tr>
-                        <tr>
-                            <td>ปกแข็งผ้าทอพื้นเมือง</td>
-                            <td id="res-stock-cover" style="text-align: right; font-weight: 700;">0 ปก</td>
-                        </tr>
-                        <tr>
-                            <td>ด้ายเย็บกี่ & กาวเข้าเล่ม</td>
-                            <td id="res-stock-binding" style="text-align: right; font-weight: 700;">0 ชุด</td>
-                        </tr>
-                    </table>
-                    <div style="background: rgba(255, 255, 255, 0.04); border-radius: 12px; padding: 0.9rem; margin-top: 1rem;">
-                        <p style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.5;">
-                            💡 <strong>เกร็ดการจัดการ:</strong> วัตถุดิบทำสมุดที่เหลือจะยกยอดไปผลิตต่อในวันถัดไป การบริหารสต็อกกระดาษและปกให้พอดีช่วยลดเงินทุนจมและไม่พลาดโอกาสขาย
+        <!-- ==========================================
+             VIEW 1: HOST PROJECTOR VIEW (จอกลางอาจารย์)
+             ========================================== -->
+        <section id="view-host" class="hide fade-in">
+            <!-- 1.1 HOST LOBBY (ห้องรอเชื่อมต่อ PIN + QR CODE) -->
+            <div id="host-lobby-panel" class="lobby-box">
+                <div class="lobby-top">
+                    <div class="pin-display-wrapper">
+                        <div class="pin-label">🔑 รหัสห้องแข่งขัน (ROOM PIN):</div>
+                        <div id="host-pin-display" class="pin-number">----</div>
+                        <p style="color: var(--text-muted); font-size: 1.05rem; margin-top: 0.4rem;">
+                            ให้นักเรียนแต่ละทีมเปิดกล้องมือถือสแกน QR Code หรือเข้าเว็บแล้วกรอกรหัส PIN นี้
                         </p>
+                        <div style="margin-top: 0.8rem; display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap;">
+                            <span id="host-share-link" style="background: rgba(0,0,0,0.4); padding: 0.4rem 0.8rem; border-radius: 8px; font-size: 0.85rem; color: var(--primary-light); font-family: monospace;"></span>
+                            <button id="btn-copy-host-link" class="btn btn-secondary btn-sm" onclick="copyHostJoinLink()">📋 คัดลอกลิงก์</button>
+                        </div>
+                    </div>
+
+                    <!-- QR Code Box -->
+                    <div style="text-align: center;">
+                        <div id="host-qrcode-box" class="qr-box">
+                            <div id="host-qrcode"></div>
+                        </div>
+                        <div style="font-size: 0.95rem; font-weight: 700; color: var(--gold); margin-top: 0.6rem;">
+                            📷 สแกนด้วยมือถือเพื่อเข้าเล่น
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- แถวที่ 2: เสียงสะท้อนจากลูกค้า (เต็มความกว้าง 100% ยาวต่อเนื่อง ไม่ถูกบีบในกล่องเล็ก) -->
-            <div class="prep-card feedback-card-full">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.4rem; flex-wrap: wrap;">
-                    <h3 style="font-size: 1.35rem; color: var(--gold);">🗣️ เสียงสะท้อนจากคนรักสมุด & ชุมชน</h3>
-                    <span style="font-size: 0.95rem; color: var(--primary-light);">ความคิดเห็นวันนี้</span>
+                <div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem; flex-wrap: wrap;">
+                        <h3 style="color: var(--gold); font-size: 1.25rem;">👥 สถานะการเชื่อมต่อของทั้ง 7 ทีม:</h3>
+                        <span id="host-connected-count" style="font-weight: 700; color: var(--primary-light);">เชื่อมต่อแล้ว: 0 / 7 ทีม</span>
+                    </div>
+
+                    <!-- 7 Team lobby cards -->
+                    <div id="host-lobby-grid" class="team-lobby-grid">
+                        <!-- Dynamic 7 team cards -->
+                    </div>
                 </div>
-                <p class="prep-subtitle" style="margin-bottom: 1rem;">ข้อคิดเห็นของลูกค้าต่อความหนา ความประณีต ราคา และค่าแรงช่างฝีมือ</p>
-                <ul id="customer-feedback" class="result-log" style="max-height: none !important; height: auto !important; overflow: visible !important; overflow-y: visible !important; display: flex !important; flex-direction: column !important; gap: 0.9rem !important;">
-                    <!-- Dynamic content -->
-                </ul>
+
+                <div style="margin-top: 2rem; text-align: center; border-top: 1.5px solid var(--card-border); padding-top: 1.5rem;">
+                    <button id="btn-host-start-round" class="btn btn-primary" style="padding: 1.1rem 3rem; font-size: 1.35rem; font-weight: 800;">
+                        📢 เริ่มการแข่งขัน วันที่ 1 🚀
+                    </button>
+                    <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 0.6rem;">
+                        * สามารถกดเริ่มได้ทันที ทีมที่ยังไม่ได้เชื่อมต่อระบบจะจำลองการวางแผนอัตโนมัติให้
+                    </p>
+                </div>
             </div>
 
-            <div style="margin-top: 2rem; display: flex; justify-content: flex-end;">
-                <button id="btn-next-day" class="btn btn-primary" style="padding: 0.85rem 2.2rem; font-size: 1.15rem;">
-                    ☀️ ก้าวสู่วันถัดไป (ดำเนินงานต่อ) ➔
+            <!-- 1.2 HOST LIVE ROUND SCREEN (หน้าจอรับข้อมูลสดระหว่างวัน) -->
+            <div id="host-round-panel" class="glass-panel hide">
+                <div class="host-status-ribbon">
+                    <div style="display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap;">
+                        <span style="font-size: 1.1rem; color: var(--text-muted);">รหัสห้อง:</span>
+                        <span id="host-live-pin" class="host-pin-tag">----</span>
+                        <span id="host-day-tag" class="day-badge" style="display: inline-flex;">📅 วันแข่งที่ 1 / 7</span>
+                        <button id="btn-host-resync" class="btn btn-secondary btn-sm" title="ส่งข้อมูลวันนี้ซ้ำไปยังมือถือทุกทีมทันที">🔄 ส่งข้อมูลวันที่ <span id="host-resync-day">1</span> ซ้ำไปทุกทีม</button>
+                    </div>
+                    <div style="font-size: 1.15rem; font-weight: 700; color: var(--gold);">
+                        📊 ส่งแผนแล้ว: <span id="host-submitted-count" style="color: #fff; font-size: 1.35rem;">0</span> / 7 ทีม
+                    </div>
+                </div>
+
+                <!-- Event Banner on Host Screen -->
+                <div id="host-event-banner" class="event-banner">
+                    <div class="event-icon-box" id="host-event-icon">☀️</div>
+                    <div class="event-content">
+                        <h3 id="host-event-title">เหตุการณ์ประจำวัน</h3>
+                        <p id="host-event-desc">คำอธิบายสถานการณ์ตลาด</p>
+                    </div>
+                </div>
+
+                <!-- 7 Teams Live Submission Monitor Grid -->
+                <div style="margin: 1.5rem 0;">
+                    <h3 style="font-size: 1.25rem; color: var(--primary-light); margin-bottom: 0.8rem;">
+                        📡 กระดานติดตามการส่งแผนแบบเรียลไทม์ (Live Submission Monitor):
+                    </h3>
+                    <div id="host-monitor-grid" class="monitor-grid">
+                        <!-- Dynamic 7 team cards with live plan status -->
+                    </div>
+                </div>
+
+                <!-- Host Simulate Action Bar -->
+                <div style="margin-top: 2rem; background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 100%); padding: 1.5rem; border-radius: 18px; border: 2px solid var(--gold); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                    <div>
+                        <h3 style="color: var(--gold); font-size: 1.35rem; margin-bottom: 0.2rem;">🏁 พร้อมเปิดตลาดประลองยอดขายวันนี้แล้วหรือยัง?</h3>
+                        <p style="color: #e5ede8; font-size: 1rem;">เมื่อนักเรียนแต่ละทีมกดส่งแผนแล้ว อาจารย์กดปุ่มนี้เพื่อจำลองยอดขายทั้ง 7 ทีมพร้อมกัน</p>
+                    </div>
+                    <button id="btn-host-simulate" class="btn btn-primary" style="padding: 1rem 2.2rem; font-size: 1.25rem; font-weight: 800; border: 2px solid #fff;">
+                        🚀 ประมวลผลยอดขายทุกทีมประจำวันนี้!
+                    </button>
+                </div>
+            </div>
+
+            <!-- 1.3 HOST RESULTS & LIVE LEADERBOARD (หน้าจอกระดานคะแนนสดบนโปรเจกเตอร์) -->
+            <div id="host-results-panel" class="glass-panel hide">
+                <div class="panel-header">
+                    <div class="panel-title" style="color: var(--gold); font-size: 1.5rem;">
+                        <span>🏆 กระดานจัดอันดับคะแนนสด 7 ทีม (Live Leaderboard)</span>
+                    </div>
+                    <span style="color: var(--text-muted); font-size: 1rem;">คลิกที่แถวของทีมเพื่อดูรายละเอียดงบการเงินและเสียงสะท้อน</span>
+                </div>
+
+                <!-- Leaderboard Table -->
+                <div class="leaderboard-table-wrapper">
+                    <table class="leaderboard-table">
+                        <thead>
+                            <tr>
+                                <th>อันดับ</th>
+                                <th style="text-align: left;">ชื่อทีม / วิสาหกิจ</th>
+                                <th>กำไรวันนี้</th>
+                                <th>กำไรสะสมสุทธิ</th>
+                                <th>เงินทุนคงเหลือ</th>
+                                <th>ยอดจำหน่ายสะสม</th>
+                                <th>กองทุนหมู่บ้าน</th>
+                                <th>ชื่อเสียง</th>
+                            </tr>
+                        </thead>
+                        <tbody id="host-leaderboard-tbody">
+                            <!-- Dynamic Leaderboard Data -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Detailed Breakdown for Selected Team -->
+                <div style="margin-top: 2rem; border-top: 2px solid var(--card-border); padding-top: 1.5rem;">
+                    <h3 style="color: var(--primary-light); font-size: 1.35rem; margin-bottom: 1rem;">
+                        📊 รายละเอียดผลประกอบการของ: <span id="host-res-team-name" style="color: var(--gold);">ทีม</span>
+                    </h3>
+
+                    <div class="grid-2">
+                        <!-- Financial Summary -->
+                        <div class="prep-card">
+                            <h3>💰 สรุปงบการเงินประจำวัน</h3>
+                            <table class="financial-table" style="margin-top: 0.8rem;">
+                                <tr>
+                                    <td>ลูกค้าที่สนใจซื้อทั้งหมด</td>
+                                    <td id="host-res-demand" style="text-align: right; font-weight:700;">0 คน</td>
+                                </tr>
+                                <tr>
+                                    <td>ยอดจำหน่ายสมุดได้จริง</td>
+                                    <td id="host-res-units" style="text-align: right; font-weight:800; color: var(--success); font-size: 1.25rem;">0 เล่ม</td>
+                                </tr>
+                                <tr style="border-top: 2px solid rgba(82, 183, 136, 0.4);">
+                                    <td>รายรับจากการขาย (Revenue)</td>
+                                    <td id="host-res-revenue" style="text-align: right; font-weight:700; color: var(--success);">+฿0.00</td>
+                                </tr>
+                                <tr>
+                                    <td>ค่าจัดซื้อกระดาษ/ปก/อุปกรณ์</td>
+                                    <td id="host-res-cost-purchases" style="text-align: right; color: var(--danger);">-฿0.00</td>
+                                </tr>
+                                <tr>
+                                    <td>ค่างบโฆษณา/ช่องทางการตลาด</td>
+                                    <td id="host-res-cost-marketing" style="text-align: right; color: var(--danger);">-฿0.00</td>
+                                </tr>
+                                <tr>
+                                    <td>หักสมทบกองทุนพัฒนาหมู่บ้าน (10%)</td>
+                                    <td id="host-res-village-fund" style="text-align: right; color: var(--warning);">-฿0.00</td>
+                                </tr>
+                                <tr style="border-top: 2px solid var(--card-border);">
+                                    <td style="font-weight: 800; font-size: 1.15rem;">กำไรสุทธิประจำวัน</td>
+                                    <td id="host-res-net-profit" style="text-align: right; font-weight:800; font-size: 1.35rem;">฿0.00</td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <!-- Inventory Balance -->
+                        <div class="prep-card">
+                            <h3>📦 วัตถุดิบคงเหลือสะสมในคลัง</h3>
+                            <table class="financial-table" style="margin-top: 0.8rem;">
+                                <tr>
+                                    <td>กระดาษถนอมสายตา</td>
+                                    <td id="host-res-stock-paper" style="text-align: right; font-weight: 700;">0 แผ่น</td>
+                                </tr>
+                                <tr>
+                                    <td>ปกแข็งผ้าทอพื้นเมือง</td>
+                                    <td id="host-res-stock-cover" style="text-align: right; font-weight: 700;">0 ปก</td>
+                                </tr>
+                                <tr>
+                                    <td>ด้ายเย็บกี่ & กาวเข้าเล่ม</td>
+                                    <td id="host-res-stock-binding" style="text-align: right; font-weight: 700;">0 ชุด</td>
+                                </tr>
+                            </table>
+                            <div style="background: rgba(255, 255, 255, 0.04); border-radius: 12px; padding: 0.9rem; margin-top: 1rem;">
+                                <p style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.5;">
+                                    💡 <strong>เกร็ดการจัดการ:</strong> ข้อมูลผลลัพธ์นี้จะถูกส่งกลับไปยังมือถือของทุกทีมโดยอัตโนมัติ
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Customer Feedback Full Width -->
+                    <div class="prep-card feedback-card-full">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.4rem; flex-wrap: wrap;">
+                            <h3 style="font-size: 1.35rem; color: var(--gold);">🗣️ เสียงสะท้อนจากคนรักสมุด & ชุมชน</h3>
+                            <span style="font-size: 0.95rem; color: var(--primary-light);">ความคิดเห็นวันนี้</span>
+                        </div>
+                        <ul id="host-customer-feedback" class="result-log">
+                            <!-- Dynamic content -->
+                        </ul>
+                    </div>
+                </div>
+
+                <div style="margin-top: 2rem; display: flex; justify-content: flex-end;">
+                    <button id="btn-host-next-day" class="btn btn-primary" style="padding: 0.9rem 2.4rem; font-size: 1.2rem;">
+                        ☀️ ก้าวสู่วันแข่งถัดไป ➔
+                    </button>
+                </div>
+            </div>
+
+            <!-- 1.4 HOST GRAND FINALE PODIUM -->
+            <div id="host-gameover-panel" class="glass-panel hide">
+                <div style="text-align: center; margin-bottom: 2rem;">
+                    <h2 style="font-size: 2.5rem; margin-bottom: 0.5rem; color: var(--gold);">👑 บทสรุปผลการแข่งขัน 7 วัน</h2>
+                    <p style="color: var(--text-muted); font-size: 1.15rem; max-width: 650px; margin: 0 auto;">
+                        ขอแสดงความยินดีกับทั้ง 7 ทีมที่ร่วมแรงร่วมใจบริหารวิสาหกิจชุมชนสมุดทำมือ! นี่คือผลสัมฤทธิ์และแท่นรับรางวัลเกียรติยศ
+                    </p>
+                </div>
+
+                <!-- PODIUM (แท่นรับรางวัล 🥇🥈🥉) -->
+                <div class="podium-container">
+                    <div class="podium-step step-2">
+                        <span style="font-size: 3rem;">🥈</span>
+                        <h4 style="color: var(--silver); font-size: 1.25rem; margin: 0.5rem 0 0.2rem 0;">รองชนะเลิศอันดับ 1</h4>
+                        <div id="host-podium-2-name" style="font-size: 1.15rem; font-weight: 700; color: #fff;">ทีม 2</div>
+                        <div id="host-podium-2-profit" style="color: var(--gold); font-weight: 700; margin-top: 0.4rem;">฿0</div>
+                    </div>
+
+                    <div class="podium-step step-1">
+                        <span style="font-size: 4.2rem;">🥇</span>
+                        <h3 style="color: var(--gold); font-size: 1.5rem; margin: 0.5rem 0 0.2rem 0;">🏆 แชมป์ชนะเลิศ</h3>
+                        <div id="host-podium-1-name" style="font-size: 1.35rem; font-weight: 800; color: #fff;">ทีม 1</div>
+                        <div id="host-podium-1-profit" style="color: var(--gold); font-size: 1.25rem; font-weight: 800; margin-top: 0.4rem;">฿0</div>
+                    </div>
+
+                    <div class="podium-step step-3">
+                        <span style="font-size: 2.8rem;">🥉</span>
+                        <h4 style="color: var(--bronze); font-size: 1.25rem; margin: 0.5rem 0 0.2rem 0;">รองชนะเลิศอันดับ 2</h4>
+                        <div id="host-podium-3-name" style="font-size: 1.15rem; font-weight: 700; color: #fff;">ทีม 3</div>
+                        <div id="host-podium-3-profit" style="color: var(--gold); font-weight: 700; margin-top: 0.4rem;">฿0</div>
+                    </div>
+                </div>
+
+                <!-- GRAND COMPARISON TABLE -->
+                <div style="margin-top: 2.5rem;">
+                    <h3 style="color: var(--primary-light); font-size: 1.35rem; margin-bottom: 1rem; text-align: center;">
+                        📋 ตารางเปรียบเทียบผลประกอบการสุดท้ายของทั้ง 7 ทีม
+                    </h3>
+                    <div class="leaderboard-table-wrapper">
+                        <table class="leaderboard-table">
+                            <thead>
+                                <tr>
+                                    <th>อันดับสุดท้าย</th>
+                                    <th style="text-align: left;">ชื่อทีม</th>
+                                    <th>กำไรสะสมสุทธิ</th>
+                                    <th>เงินทุนคงเหลือ</th>
+                                    <th>ยอดขายสะสม</th>
+                                    <th>กองทุนหมู่บ้าน</th>
+                                    <th>ชื่อเสียง</th>
+                                </tr>
+                            </thead>
+                            <tbody id="host-end-table-tbody">
+                                <!-- End Game Team Rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div style="text-align: center; margin-top: 2.5rem;">
+                    <button id="btn-host-restart-game" class="btn btn-primary" style="padding: 0.9rem 2.8rem; font-size: 1.2rem;">
+                        🔄 เริ่มต้นทัวร์นาเมนต์การแข่งขันรอบใหม่
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==========================================
+             VIEW 2: STUDENT MOBILE VIEW (มือถือนักเรียน)
+             ========================================== -->
+        <section id="view-student" class="student-card-container hide fade-in">
+            <!-- 2.1 STUDENT JOIN SCREEN -->
+            <div id="student-join-panel" class="student-join-box">
+                <span class="badge-live" style="margin-bottom: 0.8rem;">📱 STUDENT MOBILE MODE</span>
+                <h2>เข้าร่วมการแข่งขัน</h2>
+                <p>กรอกรหัสห้อง PIN และเลือกทีมของคุณเพื่อส่งแผนเข้าจอกลางอาจารย์</p>
+
+                <div class="form-group-student">
+                    <label for="student-input-pin">🔑 รหัสห้องแข่งขัน (ROOM PIN 4 หลัก):</label>
+                    <input type="text" id="student-input-pin" class="input-pin" maxlength="4" placeholder="เช่น 8824" inputmode="numeric">
+                </div>
+
+                <div class="form-group-student">
+                    <label for="student-select-team">👥 1. เลือกหมายเลขทีม (1 - 7):</label>
+                    <select id="student-select-team" class="form-select" style="font-size: 1.15rem; font-weight: 700;">
+                        <option value="team1">ทีม 1</option>
+                        <option value="team2">ทีม 2</option>
+                        <option value="team3">ทีม 3</option>
+                        <option value="team4">ทีม 4</option>
+                        <option value="team5">ทีม 5</option>
+                        <option value="team6">ทีม 6</option>
+                        <option value="team7">ทีม 7</option>
+                    </select>
+                </div>
+
+                <div class="form-group-student">
+                    <label for="student-input-teamname">✏️ 2. ตั้งชื่อทีมของคุณ (ชื่อวิสาหกิจ):</label>
+                    <input type="text" id="student-input-teamname" class="input-text-student" placeholder="เช่น สมุดสายรุ้ง, วัยรุ่นเย็บกี่, มนต์เสน่ห์คราฟต์" maxlength="35">
+                    <span style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-top: 0.25rem;">* ชื่อนี้จะไปโผล่บนจอโปรเจกเตอร์หน้าห้องและกระดานจัดอันดับ</span>
+                </div>
+
+                <div class="form-group-student">
+                    <label for="student-input-name">👥 3. ชื่อสมาชิกในทีม (ไม่บังคับ):</label>
+                    <input type="text" id="student-input-name" class="input-text-student" placeholder="เช่น กานต์, นุช, บอล">
+                </div>
+
+                <button id="btn-student-join" class="btn btn-primary" style="width: 100%; padding: 1rem; font-size: 1.25rem; font-weight: 800; margin-top: 1rem;">
+                    🚀 เชื่อมต่อเข้าสู่ห้องแข่งขัน
                 </button>
             </div>
-        </div>
 
-        <!-- PHASE 3: END GAME REPORT -->
-        <div id="panel-gameover" class="glass-panel end-game-card fade-in hide">
-            <h2 style="font-size: 2.3rem; margin-bottom: 0.5rem; color: var(--gold);">👑 บทสรุปผลการดำเนินงาน 7 วัน</h2>
-            <p style="color: var(--text-muted); margin-bottom: 2rem; max-width: 620px; margin-left: auto; margin-right: auto; font-size: 1.05rem;">
-                ขอแสดงความยินดีกับความมุ่งมั่นในการบริหารกลุ่มสมุดทำมือชุมชน! นี่คือรายงานสรุปผลสัมฤทธิ์และทักษะการคำนวณต้นทุน-กำไรของท่าน
-            </p>
-
-            <div class="grade-badge" id="end-grade">A+</div>
-            <h3 id="end-status-title" style="font-size: 1.55rem; margin-bottom: 0.8rem; color: var(--primary-light);">สถานะการประเมิน</h3>
-            <p id="end-commentary" style="color: var(--text-muted); max-width: 650px; margin: 0 auto 2.5rem auto; line-height: 1.6; font-size: 1.05rem;"></p>
-
-            <div style="max-width: 640px; margin: 0 auto 2.5rem auto; background: rgba(0, 0, 0, 0.35); border-radius: 18px; padding: 1.6rem; border: 1.5px solid var(--card-border);">
-                <table class="financial-table">
-                    <tr>
-                        <td>เงินทุนหมุนเวียนคงเหลือสุทธิ</td>
-                        <td id="end-cash" style="text-align: right; font-weight:800; color: var(--success); font-size:1.25rem;">฿0.00</td>
-                    </tr>
-                    <tr>
-                        <td>กำไรสะสมสุทธิตลอด 7 วัน</td>
-                        <td id="end-profit" style="text-align: right; font-weight:800; color: var(--success); font-size:1.25rem;">฿0.00</td>
-                    </tr>
-                    <tr>
-                        <td>เงินสะสมเข้ากองทุนพัฒนาหมู่บ้านโมกุล</td>
-                        <td id="end-village-fund" style="text-align: right; font-weight:800; color: var(--gold); font-size:1.25rem;">฿0.00</td>
-                    </tr>
-                    <tr>
-                        <td>รายได้ค่าแรงงานฝีมือที่กระจายสู่ชุมชน</td>
-                        <td id="end-labor-paid" style="text-align: right; font-weight:800; color: var(--primary-light); font-size:1.25rem;">฿0.00</td>
-                    </tr>
-                    <tr>
-                        <td>ชื่อเสียงและความไว้วางใจ OTOP</td>
-                        <td id="end-reputation" style="text-align: right; font-weight:800;">0%</td>
-                    </tr>
-                    <tr>
-                        <td>จำนวนสมุดทำมือที่จำหน่ายได้สะสม</td>
-                        <td id="end-units-sold" style="text-align: right; font-weight:800;">0 เล่ม</td>
-                    </tr>
-                </table>
+            <!-- 2.2 STUDENT WAITING SCREEN -->
+            <div id="student-waiting-panel" class="student-waiting-box hide">
+                <div class="student-waiting-icon">🟢</div>
+                <h2 style="color: var(--gold); font-size: 1.6rem; margin-bottom: 0.4rem;">เชื่อมต่อสำเร็จ!</h2>
+                <h3 id="student-wait-team-name" style="color: #fff; font-size: 1.3rem; margin-bottom: 0.8rem;">ทีม: กำลังโหลด...</h3>
+                <p style="color: var(--text-muted); font-size: 1.1rem; line-height: 1.5; margin-bottom: 1.5rem;">
+                    ทีมของคุณเชื่อมต่อกับจอกลางห้อง <span id="student-wait-pin" style="color: var(--gold); font-weight: 700;"></span> เรียบร้อยแล้ว<br>
+                    <strong>กรุณารออาจารย์กดเริ่มวันที่ 1 บนจอโปรเจกเตอร์หน้าห้อง...</strong>
+                </p>
+                <div style="background: rgba(0,0,0,0.3); padding: 0.8rem; border-radius: 12px; border: 1px dashed var(--primary); margin-bottom: 1.2rem;">
+                    <span style="color: var(--primary-light); font-size: 0.95rem;">💡 เตรียมปรึกษากันในทีม: บริหารต้นทุนกระดาษและตั้งราคาให้เหมาะสม</span>
+                </div>
+                <div>
+                    <button id="btn-student-fetch-state" class="btn btn-secondary" style="width: 100%; padding: 0.85rem; font-size: 1.05rem; border-color: var(--gold); color: var(--gold);">
+                        🔄 แตะตรงนี้เพื่อดึงข้อมูลวันที่ 1 (หรือรออาจารย์กดเริ่ม)
+                    </button>
+                </div>
             </div>
 
-            <button id="btn-restart-game" class="btn btn-primary" style="padding: 0.85rem 2.4rem; font-size: 1.15rem;">
-                🔄 ฝึกฝนรอบใหม่อีกครั้ง
-            </button>
-        </div>
+            <!-- 2.3 STUDENT PLANNING SCREEN (หน้าจอวางแผนบนมือถือ) -->
+            <div id="student-prep-panel" class="fade-in hide">
+                <!-- Top Status Header on Mobile -->
+                <div style="background: #112217; border: 1.5px solid var(--gold); border-radius: 16px; padding: 1rem; margin-bottom: 1rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem; gap: 0.5rem; flex-wrap: wrap;">
+                        <span id="student-day-indicator" class="day-badge" style="padding: 0.3rem 0.8rem; font-size: 0.95rem;">📅 วันที่ 1 / 7</span>
+                        <div style="display: flex; align-items: center; gap: 0.4rem;">
+                            <span id="student-active-team-label" style="font-weight: 800; color: var(--gold); font-size: 1.15rem;">ทีม 1</span>
+                            <button id="btn-student-rename" class="btn btn-secondary btn-sm" style="padding: 0.2rem 0.5rem; font-size: 0.85rem;" title="แก้ไขชื่อทีม">✏️ เปลี่ยนชื่อ</button>
+                        </div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 1.05rem;">
+                        <span>เงินทุน: <strong id="student-val-cash" style="color: var(--gold); font-size: 1.25rem;">฿1,500</strong></span>
+                        <span>ชื่อเสียง: <strong id="student-val-rep" style="color: var(--primary-light);">50%</strong></span>
+                    </div>
+                    <div style="margin-top: 0.4rem; font-size: 0.92rem; color: var(--text-muted); border-top: 1px solid rgba(255,255,255,0.1); padding-top: 0.4rem;">
+                        สต็อกปัจจุบัน: <span id="student-val-stock-summary">กำลังโหลด...</span>
+                    </div>
+                </div>
+
+                <!-- Event Banner on Student Phone -->
+                <div id="student-event-banner" class="event-banner" style="padding: 0.9rem 1rem; margin-bottom: 1.2rem;">
+                    <div class="event-icon-box" id="student-event-icon" style="min-width: 44px; height: 44px; font-size: 1.8rem;">☀️</div>
+                    <div class="event-content">
+                        <h4 id="student-event-title" style="color: var(--gold); font-size: 1.15rem;">เหตุการณ์วันนี้</h4>
+                        <p id="student-event-desc" style="font-size: 0.95rem; line-height: 1.4;">คำอธิบาย</p>
+                    </div>
+                </div>
+
+                <!-- Step 1: Buy Materials -->
+                <div class="prep-card" style="margin-bottom: 1.2rem;">
+                    <h3>🛒 1. จัดซื้อวัตถุดิบเข้าสต็อก</h3>
+                    <p class="prep-subtitle">สั่งซื้อวัตถุดิบให้เพียงพอกับยอดขายที่คาดหวัง</p>
+
+                    <!-- Paper -->
+                    <div class="material-row">
+                        <div class="material-header">
+                            <span class="material-name">1. กระดาษถนอมสายตา</span>
+                            <span class="material-cost" id="student-price-buy-paper">฿0.40 / แผ่น</span>
+                        </div>
+                        <div class="quantity-control">
+                            <button class="btn btn-secondary" onclick="adjustStudentBuy('paper', -50)">-50</button>
+                            <button class="btn btn-secondary" onclick="adjustStudentBuy('paper', -10)">-10</button>
+                            <input type="number" id="student-buy-paper" class="input-number" value="0" min="0" readonly>
+                            <button class="btn btn-secondary" onclick="adjustStudentBuy('paper', 10)">+10</button>
+                            <button class="btn btn-secondary" onclick="adjustStudentBuy('paper', 50)">+50</button>
+                        </div>
+                    </div>
+
+                    <!-- Cover -->
+                    <div class="material-row">
+                        <div class="material-header">
+                            <span class="material-name">2. ปกแข็งผ้าทอพื้นเมือง</span>
+                            <span class="material-cost" id="student-price-buy-cover">฿16.0 / ปก</span>
+                        </div>
+                        <div class="quantity-control">
+                            <button class="btn btn-secondary" onclick="adjustStudentBuy('cover', -5)">-5</button>
+                            <button class="btn btn-secondary" onclick="adjustStudentBuy('cover', -1)">-1</button>
+                            <input type="number" id="student-buy-cover" class="input-number" value="0" min="0" readonly>
+                            <button class="btn btn-secondary" onclick="adjustStudentBuy('cover', 1)">+1</button>
+                            <button class="btn btn-secondary" onclick="adjustStudentBuy('cover', 5)">+5</button>
+                        </div>
+                    </div>
+
+                    <!-- Binding -->
+                    <div class="material-row">
+                        <div class="material-header">
+                            <span class="material-name">3. ด้ายเย็บกี่ & อุปกรณ์เข้าเล่ม</span>
+                            <span class="material-cost" id="student-price-buy-binding">฿7.0 / ชุด</span>
+                        </div>
+                        <div class="quantity-control">
+                            <button class="btn btn-secondary" onclick="adjustStudentBuy('binding', -5)">-5</button>
+                            <button class="btn btn-secondary" onclick="adjustStudentBuy('binding', -1)">-1</button>
+                            <input type="number" id="student-buy-binding" class="input-number" value="0" min="0" readonly>
+                            <button class="btn btn-secondary" onclick="adjustStudentBuy('binding', 1)">+1</button>
+                            <button class="btn btn-secondary" onclick="adjustStudentBuy('binding', 5)">+5</button>
+                        </div>
+                    </div>
+
+                    <div style="border-top: 1.5px dashed rgba(82, 183, 136, 0.4); padding-top: 0.8rem; margin-top: 0.6rem; display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 0.95rem; color: var(--text-muted);">ยอดสั่งซื้อวันนี้:</span>
+                        <span id="student-total-purchase" style="color: var(--gold); font-size: 1.35rem; font-weight: 800;">฿0.00</span>
+                    </div>
+                </div>
+
+                <!-- Step 2: Recipe & Unit Cost Breakdown -->
+                <div class="prep-card" style="margin-bottom: 1.2rem;">
+                    <h3>🧪 2. กำหนดสเปก & ต้นทุนต่อเล่ม</h3>
+                    <p class="prep-subtitle">สมุดยิ่งหนา ยิ่งเขียนจุใจ แต่ต้นทุนจะสูงขึ้น</p>
+
+                    <div class="slider-group">
+                        <div class="slider-label">
+                            <span>จำนวนกระดาษต่อเล่ม:</span>
+                            <span class="slider-val"><span id="student-lbl-rec-paper">60</span> แผ่น</span>
+                        </div>
+                        <input type="range" id="student-rec-paper" min="30" max="100" step="5" value="60">
+                    </div>
+
+                    <div class="cost-calculator-box">
+                        <div style="font-size: 0.95rem; font-weight: 700; color: var(--primary-light); margin-bottom: 0.4rem;">
+                            📋 โครงสร้างต้นทุนผลิต 1 เล่ม (Unit Cost):
+                        </div>
+                        <div class="calc-row">
+                            <span style="color: var(--text-muted);">- ค่ากระดาษถนอมสายตา:</span>
+                            <span id="student-calc-cost-paper">฿0.00</span>
+                        </div>
+                        <div class="calc-row">
+                            <span style="color: var(--text-muted);">- ค่าปกผ้าทอ + อุปกรณ์เข้าเล่ม:</span>
+                            <span id="student-calc-cost-parts">฿23.00</span>
+                        </div>
+                        <div class="calc-row">
+                            <span style="color: var(--text-muted);">- ค่าแรงงานฝีมือช่างเย็บ:</span>
+                            <span id="student-calc-cost-labor">฿15.00</span>
+                        </div>
+                        <div class="calc-row total">
+                            <span>รวมต้นทุนต่อเล่ม:</span>
+                            <span id="student-calc-total-unit-cost" style="color: #fff;">฿0.00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Pricing & Marketing -->
+                <div class="prep-card" style="margin-bottom: 1.5rem;">
+                    <h3>📢 3. ตั้งราคาขาย & ช่องทางการตลาด</h3>
+                    <p class="prep-subtitle">ตั้งราคาขายและเลือกโปรโมทเพื่อดึงดูดลูกค้า</p>
+
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; font-size: 1rem; font-weight: 600; margin-bottom: 0.3rem; color: var(--text-muted);">
+                            ราคาขายสมุดทำมือ (บาท / เล่ม)
+                        </label>
+                        <div style="display: flex; align-items: center; gap: 0.7rem;">
+                            <input type="number" id="student-price-per-unit" class="input-number" style="width: 130px; font-size: 1.4rem;" value="89" min="20" max="350">
+                            <span style="font-weight: 700; font-size: 1.15rem;">บาท</span>
+                        </div>
+                    </div>
+
+                    <!-- Live Profit Calculator -->
+                    <div class="cost-calculator-box" style="background: rgba(233, 196, 106, 0.1); border-color: var(--gold); margin-bottom: 1rem;">
+                        <div class="calc-row">
+                            <span style="color: var(--text-muted);">กำไรขั้นต้นต่อเล่ม:</span>
+                            <span id="student-calc-profit-unit" style="font-weight: 800; font-size: 1.25rem; color: var(--gold);">฿0.00</span>
+                        </div>
+                        <div class="calc-row">
+                            <span style="color: var(--text-muted);">สถานะอัตรากำไร (Margin):</span>
+                            <span id="student-margin-badge" class="margin-pill good">คำนวณ...</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label style="display: block; font-size: 0.95rem; font-weight: 600; margin-bottom: 0.3rem; color: var(--text-muted);">
+                            ช่องทางการโปรโมทวันนี้:
+                        </label>
+                        <select id="student-marketing-select" class="form-select">
+                            <!-- Dynamic marketing options -->
+                        </select>
+                    </div>
+                </div>
+
+                <!-- GIANT SUBMIT BUTTON -->
+                <button id="btn-student-submit-plan" class="btn btn-primary" style="width: 100%; padding: 1.15rem; font-size: 1.35rem; font-weight: 800; border-radius: 16px; box-shadow: 0 8px 25px rgba(82, 183, 136, 0.5);">
+                    🚀 ส่งแผนการผลิตเข้าจอกลางอาจารย์!
+                </button>
+            </div>
+
+            <!-- 2.4 STUDENT SUBMITTED SCREEN (ยืนยันว่าข้อมูลวิ่งเข้าจอกลางแล้ว) -->
+            <div id="student-submitted-panel" class="student-submitted-box hide">
+                <div style="font-size: 3.5rem; margin-bottom: 0.6rem;">✅</div>
+                <h2 style="color: var(--success); font-size: 1.6rem; margin-bottom: 0.4rem;">ส่งแผนเข้าจอกลางแล้ว!</h2>
+                <p style="color: #e5ede8; font-size: 1.1rem; line-height: 1.5; margin-bottom: 1.4rem;">
+                    ตัวเลขการจัดซื้อและการตั้งราคาของทีมคุณวิ่งขึ้นบนจอกลางหน้าห้องเรียบร้อยแล้ว<br>
+                    <strong>กำลังรออาจารย์กดประมวลผลยอดขาย...</strong>
+                </p>
+                <div id="student-submitted-summary" style="background: rgba(0,0,0,0.3); border-radius: 12px; padding: 1rem; text-align: left; font-size: 0.95rem; line-height: 1.6;">
+                    <!-- Submitted plan details summary -->
+                </div>
+            </div>
+
+            <!-- 2.5 STUDENT RESULTS SCREEN (ผลประกอบการประจำวันของทีม) -->
+            <div id="student-results-panel" class="fade-in hide">
+                <!-- Rank Hero Banner -->
+                <div class="student-rank-hero">
+                    <div style="font-size: 1.1rem; color: var(--text-muted); font-weight: 600;">อันดับของทีมวันนี้:</div>
+                    <div id="student-res-rank-display" class="student-rank-number">ที่ 1</div>
+                    <div style="font-size: 1rem; color: var(--gold);">จากทั้งหมด 7 ทีม</div>
+                </div>
+
+                <!-- Financial Card -->
+                <div class="prep-card" style="margin-bottom: 1.2rem;">
+                    <h3>💰 สรุปผลประกอบการของทีม</h3>
+                    <table class="financial-table" style="margin-top: 0.8rem;">
+                        <tr>
+                            <td>ยอดจำหน่ายสมุดได้จริง</td>
+                            <td id="student-res-units" style="text-align: right; font-weight:800; color: var(--success); font-size: 1.25rem;">0 เล่ม</td>
+                        </tr>
+                        <tr>
+                            <td>รายรับจากการขาย</td>
+                            <td id="student-res-revenue" style="text-align: right; font-weight:700; color: var(--success);">+฿0.00</td>
+                        </tr>
+                        <tr>
+                            <td>ต้นทุนจัดซื้อ & การตลาด</td>
+                            <td id="student-res-expenses" style="text-align: right; color: var(--danger);">-฿0.00</td>
+                        </tr>
+                        <tr style="border-top: 2px solid var(--card-border);">
+                            <td style="font-weight: 800; font-size: 1.15rem;">กำไรสุทธิวันนี้</td>
+                            <td id="student-res-net-profit" style="text-align: right; font-weight:800; font-size: 1.35rem;">฿0.00</td>
+                        </tr>
+                        <tr>
+                            <td style="color: var(--gold); font-weight: 700;">กำไรสะสมรวม</td>
+                            <td id="student-res-cumulative-profit" style="text-align: right; font-weight:800; font-size: 1.25rem; color: var(--gold);">฿0.00</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Customer Feedback -->
+                <div class="prep-card feedback-card-full" style="margin-bottom: 1.5rem;">
+                    <h3 style="color: var(--gold); font-size: 1.25rem; margin-bottom: 0.4rem;">🗣️ เสียงสะท้อนจากลูกค้าวันนี้</h3>
+                    <ul id="student-customer-feedback" class="result-log">
+                        <!-- Dynamic feedback -->
+                    </ul>
+                </div>
+
+                <div style="text-align: center; background: rgba(0,0,0,0.3); padding: 1.2rem; border-radius: 14px; border: 1.5px dashed var(--primary);">
+                    <div style="font-size: 1.8rem; margin-bottom: 0.4rem;">⏳</div>
+                    <span style="font-weight: 700; color: var(--gold); font-size: 1.15rem;">กำลังรออาจารย์เปิดวันแข่งถัดไป...</span>
+                    <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 0.3rem;">เมื่ออาจารย์ก้าวสู่วันถัดไป หน้าจอนี้จะเปลี่ยนเป็นวันใหม่โดยอัตโนมัติ</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==========================================
+             VIEW 3: SINGLE DEVICE / OFFLINE VIEW
+             ========================================== -->
+        <section id="view-single" class="hide fade-in">
+            <!-- TEAM SWITCHER BAR (แถบสลับทีมทั้ง 7 ทีม) -->
+            <div class="team-nav-bar">
+                <div class="team-nav-header">
+                    <div class="team-nav-title">
+                        <span>👥 เลือกทีมที่ต้องการวางแผน (แตะสลับทีมได้อิสระ):</span>
+                    </div>
+                    <div style="display: flex; gap: 0.6rem; align-items: center;">
+                        <span id="readiness-text" style="font-size: 0.95rem; color: var(--gold); font-weight: 700;">ทีมที่ยืนยันแผนแล้ว: 0 / 7 ทีม</span>
+                        <button id="btn-rename-team" class="btn btn-secondary btn-sm" title="แก้ไขชื่อทีม">✏️ เปลี่ยนชื่อทีม</button>
+                    </div>
+                </div>
+                <div id="team-chips-container" class="team-chips-scroll">
+                    <!-- Generated dynamically for 7 teams -->
+                </div>
+            </div>
+
+            <!-- TOP DASHBOARD METRICS FOR ACTIVE TEAM -->
+            <div class="dashboard-bar">
+                <div class="stat-card">
+                    <div class="stat-icon">💰</div>
+                    <div class="stat-info">
+                        <div class="label">เงินทุนหมุนเวียน (<span id="active-team-display-name">ทีมปัจจุบัน</span>)</div>
+                        <div class="value" id="val-cash">฿1,500</div>
+                    </div>
+                </div>
+
+                <div class="stat-card accent-card">
+                    <div class="stat-icon">⭐</div>
+                    <div class="stat-info">
+                        <div class="label">ชื่อเสียง & ความเชื่อมั่น OTOP</div>
+                        <div class="value" id="val-reputation">50%</div>
+                    </div>
+                </div>
+
+                <div class="stat-card community-card">
+                    <div class="stat-icon">🤝</div>
+                    <div class="stat-info">
+                        <div class="label">กองทุนพัฒนาหมู่บ้านสะสม</div>
+                        <div class="value" id="val-village-fund">฿0</div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">📦</div>
+                    <div class="stat-info">
+                        <div class="label">สต็อกวัตถุดิบคงคลัง</div>
+                        <div class="value" id="val-stock-summary" style="font-size: 0.92rem; font-weight: 600; line-height: 1.4;">กำลังโหลด...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SPECIAL EVENT BANNER -->
+            <div id="event-banner" class="event-banner hide">
+                <div class="event-icon-box" id="event-icon">☀️</div>
+                <div class="event-content">
+                    <h3 id="event-title">เหตุการณ์ประจำวัน</h3>
+                    <p id="event-description">คำอธิบายสถานการณ์ตลาดและปัจจัยทางเศรษฐกิจชุมชนประจำวัน</p>
+                </div>
+            </div>
+
+            <!-- PHASE 1: PREPARATION & PRICING PANEL -->
+            <div id="panel-prep" class="glass-panel fade-in">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <span>⚙️ วางแผนการผลิตและคิดราคาต้นทุนประจำวัน:</span>
+                        <span style="color: var(--gold); font-size: 1.25rem;">สมุดทำมือชุมชนบ้านโมกุล</span>
+                    </div>
+                </div>
+
+                <div class="grid-3">
+                    <!-- 1. Purchase Materials -->
+                    <div class="prep-card">
+                        <div>
+                            <h3>🛒 1. จัดซื้อวัตถุดิบเข้าสต็อก</h3>
+                            <p class="prep-subtitle">สั่งซื้อวัตถุดิบให้เพียงพอกับยอดขายที่คาดหวัง ระวังเงินสดหมด</p>
+
+                            <!-- Material 1 Paper -->
+                            <div class="material-row">
+                                <div class="material-header">
+                                    <span class="material-name">1. กระดาษถนอมสายตา</span>
+                                    <span class="material-cost" id="price-buy-paper">฿0.40 / แผ่น</span>
+                                </div>
+                                <div class="quantity-control">
+                                    <button class="btn btn-secondary" onclick="adjustBuy('paper', -50)">-50</button>
+                                    <button class="btn btn-secondary" onclick="adjustBuy('paper', -10)">-10</button>
+                                    <input type="number" id="buy-paper" class="input-number" value="0" min="0" readonly>
+                                    <button class="btn btn-secondary" onclick="adjustBuy('paper', 10)">+10</button>
+                                    <button class="btn btn-secondary" onclick="adjustBuy('paper', 50)">+50</button>
+                                </div>
+                            </div>
+
+                            <!-- Material 2 Cover -->
+                            <div class="material-row">
+                                <div class="material-header">
+                                    <span class="material-name">2. ปกแข็งผ้าทอพื้นเมือง</span>
+                                    <span class="material-cost" id="price-buy-cover">฿16.0 / ปก</span>
+                                </div>
+                                <div class="quantity-control">
+                                    <button class="btn btn-secondary" onclick="adjustBuy('cover', -5)">-5</button>
+                                    <button class="btn btn-secondary" onclick="adjustBuy('cover', -1)">-1</button>
+                                    <input type="number" id="buy-cover" class="input-number" value="0" min="0" readonly>
+                                    <button class="btn btn-secondary" onclick="adjustBuy('cover', 1)">+1</button>
+                                    <button class="btn btn-secondary" onclick="adjustBuy('cover', 5)">+5</button>
+                                </div>
+                            </div>
+
+                            <!-- Material 3 Binding -->
+                            <div class="material-row">
+                                <div class="material-header">
+                                    <span class="material-name">3. ด้ายเย็บกี่ & อุปกรณ์เข้าเล่ม</span>
+                                    <span class="material-cost" id="price-buy-binding">฿7.0 / ชุด</span>
+                                </div>
+                                <div class="quantity-control">
+                                    <button class="btn btn-secondary" onclick="adjustBuy('binding', -5)">-5</button>
+                                    <button class="btn btn-secondary" onclick="adjustBuy('binding', -1)">-1</button>
+                                    <input type="number" id="buy-binding" class="input-number" value="0" min="0" readonly>
+                                    <button class="btn btn-secondary" onclick="adjustBuy('binding', 1)">+1</button>
+                                    <button class="btn btn-secondary" onclick="adjustBuy('binding', 5)">+5</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="border-top: 1.5px dashed rgba(82, 183, 136, 0.4); padding-top: 0.9rem; margin-top: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 1rem; color: var(--text-muted);">ยอดสั่งซื้อของทีมนี้:</span>
+                            <span id="total-purchase" style="color: var(--gold); font-size: 1.35rem; font-weight: 800;">฿0.00</span>
+                        </div>
+                    </div>
+
+                    <!-- 2. Recipe & Cost Breakdown -->
+                    <div class="prep-card">
+                        <div>
+                            <h3>🧪 2. กำหนดสเปก & วิเคราะห์ต้นทุนต่อเล่ม</h3>
+                            <p class="prep-subtitle">สมุดยิ่งหนา ยิ่งเขียนจุใจ ลูกค้ายิ่งชอบ แต่ต้นทุนกระดาษจะสูงขึ้น</p>
+
+                            <!-- Slider Paper Sheets -->
+                            <div class="slider-group">
+                                <div class="slider-label">
+                                    <span>จำนวนกระดาษต่อเล่ม:</span>
+                                    <span class="slider-val"><span id="lbl-rec-paper">60</span> แผ่น</span>
+                                </div>
+                                <input type="range" id="rec-paper" min="30" max="100" step="5" value="60">
+                                <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.4rem;">* กระดาษถนอมสายตา 80 แกรม เขียนลื่น หมึกไม่ซึม</p>
+                            </div>
+
+                            <div class="slider-group" style="padding: 0.7rem 1rem;">
+                                <div class="slider-label" style="margin-bottom: 0;">
+                                    <span>ปกแข็งผ้าทอ & อุปกรณ์เข้าเล่ม:</span>
+                                    <span class="slider-val">อย่างละ 1 ชิ้น / เล่ม</span>
+                                </div>
+                            </div>
+
+                            <!-- Live Cost Breakdown Box -->
+                            <div class="cost-calculator-box">
+                                <div style="font-size: 0.95rem; font-weight: 700; color: var(--primary-light); margin-bottom: 0.6rem;">
+                                    📋 โครงสร้างต้นทุนผลิตสมุด 1 เล่ม (Unit Cost):
+                                </div>
+                                <div class="calc-row">
+                                    <span style="color: var(--text-muted);">- ค่ากระดาษถนอมสายตา:</span>
+                                    <span id="calc-cost-paper">฿0.00</span>
+                                </div>
+                                <div class="calc-row">
+                                    <span style="color: var(--text-muted);">- ค่าปกแข็งผ้าทอบ้านโมกุล:</span>
+                                    <span id="calc-cost-cover">฿0.00</span>
+                                </div>
+                                <div class="calc-row">
+                                    <span style="color: var(--text-muted);">- ค่าด้ายเย็บกี่ & อุปกรณ์:</span>
+                                    <span id="calc-cost-binding">฿0.00</span>
+                                </div>
+                                <div class="calc-row">
+                                    <span style="color: var(--text-muted);">- ค่าแรงงานฝีมือเย็บเล่ม:</span>
+                                    <span id="calc-cost-labor">฿15.00</span>
+                                </div>
+                                <div class="calc-row total">
+                                    <span>รวมต้นทุนผลิตต่อเล่ม:</span>
+                                    <span id="calc-total-unit-cost" style="color: #fff;">฿0.00</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. Pricing, Profit & Marketing -->
+                    <div class="prep-card">
+                        <div>
+                            <h3>📢 3. ตั้งราคาขาย & ช่องทางการตลาด</h3>
+                            <p class="prep-subtitle">ตั้งราคาขายประลองความคุ้มค่า และเลือกโปรโมทเพื่อดึงดูดลูกค้า</p>
+
+                            <div style="margin-bottom: 1.2rem;">
+                                <label style="display: block; font-size: 1rem; font-weight: 600; margin-bottom: 0.4rem; color: var(--text-muted);">
+                                    ราคาขายสมุดทำมือ (บาท / เล่ม)
+                                </label>
+                                <div style="display: flex; align-items: center; gap: 0.7rem;">
+                                    <input type="number" id="price-per-unit" class="input-number" style="width: 120px; font-size: 1.35rem;" value="89" min="20" max="350">
+                                    <span style="font-weight: 700; font-size: 1.15rem;">บาท</span>
+                                </div>
+                            </div>
+
+                            <!-- Live Profit & Break-Even Widget -->
+                            <div class="cost-calculator-box" style="background: rgba(233, 196, 106, 0.1); border-color: var(--gold);">
+                                <div style="font-size: 0.95rem; font-weight: 700; color: var(--gold); margin-bottom: 0.6rem;">
+                                    💡 วิเคราะห์ผลกำไร & จุดคุ้มทุน:
+                                </div>
+                                <div class="calc-row">
+                                    <span style="color: var(--text-muted);">กำไรขั้นต้นต่อเล่ม:</span>
+                                    <span id="calc-profit-unit" style="font-weight: 800; font-size: 1.2rem;">฿0.00</span>
+                                </div>
+                                <div class="calc-row">
+                                    <span style="color: var(--text-muted);">สถานะอัตรากำไร (Margin):</span>
+                                    <span id="margin-badge" class="margin-pill good">คำนวณ...</span>
+                                </div>
+                                <div class="calc-row">
+                                    <span style="color: var(--text-muted);">จุดคุ้มทุนค่าการตลาด:</span>
+                                    <span id="calc-breakeven" style="font-weight: 700; color: var(--gold);">0 เล่ม</span>
+                                </div>
+                            </div>
+
+                            <!-- Marketing Channel -->
+                            <div style="margin-top: 1.2rem;">
+                                <label style="display: block; font-size: 0.95rem; font-weight: 600; margin-bottom: 0.4rem; color: var(--text-muted);">
+                                    ช่องทางการโปรโมทวันนี้:
+                                </label>
+                                <select id="marketing-select" class="form-select">
+                                    <!-- Generated dynamically -->
+                                </select>
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 1.5rem;">
+                            <button id="btn-confirm-team" class="btn btn-secondary" style="width: 100%; padding: 0.8rem; font-size: 1.1rem; margin-bottom: 0.6rem;">
+                                ✅ บันทึกแผนของทีมนี้
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SIMULATION LAUNCH BAR -->
+                <div style="margin-top: 2rem; background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 100%); padding: 1.5rem; border-radius: 18px; border: 2px solid var(--gold); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                    <div>
+                        <h3 style="color: var(--gold); font-size: 1.35rem; margin-bottom: 0.2rem;">🏁 พร้อมเปิดตลาดประลองยอดขายวันนี้แล้วหรือยัง?</h3>
+                        <p style="color: #e5ede8; font-size: 1rem;">เมื่อตัวแทนทีมตั้งราคาและวางแผนครบแล้ว กดปุ่มนี้เพื่อจำลองยอดขายทั้ง 7 ทีมพร้อมกัน</p>
+                    </div>
+                    <button id="btn-simulate-all" class="btn btn-primary" style="padding: 1rem 2.2rem; font-size: 1.25rem; font-weight: 800; border: 2px solid #fff;">
+                        🚀 ประมวลผลยอดขายทุกทีมประจำวันนี้!
+                    </button>
+                </div>
+            </div>
+
+            <!-- PHASE 2: RESULTS & LIVE LEADERBOARD PANEL -->
+            <div id="panel-results" class="glass-panel fade-in hide">
+                <div class="panel-header">
+                    <div class="panel-title" style="color: var(--gold); font-size: 1.5rem;">
+                        <span>🏆 กระดานจัดอันดับคะแนนสด 7 ทีม (Live Leaderboard)</span>
+                    </div>
+                    <span style="color: var(--text-muted); font-size: 1rem;">คลิกที่แถวของทีมเพื่อดูรายละเอียดงบการเงินด้านล่าง</span>
+                </div>
+
+                <!-- LEADERBOARD TABLE -->
+                <div class="leaderboard-table-wrapper">
+                    <table class="leaderboard-table">
+                        <thead>
+                            <tr>
+                                <th>อันดับ</th>
+                                <th style="text-align: left;">ชื่อทีม / วิสาหกิจ</th>
+                                <th>กำไรวันนี้</th>
+                                <th>กำไรสะสมสุทธิ</th>
+                                <th>เงินทุนคงเหลือ</th>
+                                <th>ยอดจำหน่ายสะสม</th>
+                                <th>กองทุนหมู่บ้าน</th>
+                                <th>ชื่อเสียง</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboard-tbody">
+                            <!-- Dynamic Leaderboard Data -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div style="margin-top: 2rem; border-top: 2px solid var(--card-border); padding-top: 1.5rem;">
+                    <h3 style="color: var(--primary-light); font-size: 1.35rem; margin-bottom: 1rem;">
+                        📊 รายละเอียดผลประกอบการของ: <span id="res-team-name-title" style="color: var(--gold);">ทีม</span>
+                    </h3>
+
+                    <div class="grid-2">
+                        <div class="prep-card">
+                            <h3>💰 สรุปงบการเงินประจำวัน</h3>
+                            <table class="financial-table" style="margin-top: 0.8rem;">
+                                <tr>
+                                    <td>ลูกค้าที่สนใจซื้อทั้งหมด</td>
+                                    <td id="res-total-demand" style="text-align: right; font-weight:700;">0 คน</td>
+                                </tr>
+                                <tr>
+                                    <td>ยอดจำหน่ายสมุดได้จริง</td>
+                                    <td id="res-sales-qty" style="text-align: right; font-weight:800; color: var(--success); font-size: 1.25rem;">0 เล่ม</td>
+                                </tr>
+                                <tr style="border-top: 2px solid rgba(82, 183, 136, 0.4);">
+                                    <td>รายรับจากการขาย (Revenue)</td>
+                                    <td id="res-revenue" style="text-align: right; font-weight:700; color: var(--success);">+฿0.00</td>
+                                </tr>
+                                <tr>
+                                    <td>ค่าจัดซื้อกระดาษ/ปก/อุปกรณ์</td>
+                                    <td id="res-cost-purchases" style="text-align: right; color: var(--danger);">-฿0.00</td>
+                                </tr>
+                                <tr>
+                                    <td>ค่างบโฆษณา/ช่องทางการตลาด</td>
+                                    <td id="res-cost-marketing" style="text-align: right; color: var(--danger);">-฿0.00</td>
+                                </tr>
+                                <tr>
+                                    <td>หักสมทบกองทุนพัฒนาหมู่บ้าน (10%)</td>
+                                    <td id="res-village-fund-deduct" style="text-align: right; color: var(--warning);">-฿0.00</td>
+                                </tr>
+                                <tr style="border-top: 2px solid var(--card-border);">
+                                    <td style="font-weight: 800; font-size: 1.15rem;">กำไรสุทธิประจำวัน</td>
+                                    <td id="res-net-profit" style="text-align: right; font-weight:800; font-size: 1.35rem;">฿0.00</td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <div class="prep-card">
+                            <h3>📦 วัตถุดิบคงเหลือสะสมในคลัง</h3>
+                            <table class="financial-table" style="margin-top: 0.8rem;">
+                                <tr>
+                                    <td>กระดาษถนอมสายตา</td>
+                                    <td id="res-stock-paper" style="text-align: right; font-weight: 700;">0 แผ่น</td>
+                                </tr>
+                                <tr>
+                                    <td>ปกแข็งผ้าทอพื้นเมือง</td>
+                                    <td id="res-stock-cover" style="text-align: right; font-weight: 700;">0 ปก</td>
+                                </tr>
+                                <tr>
+                                    <td>ด้ายเย็บกี่ & กาวเข้าเล่ม</td>
+                                    <td id="res-stock-binding" style="text-align: right; font-weight: 700;">0 ชุด</td>
+                                </tr>
+                            </table>
+                            <div style="background: rgba(255, 255, 255, 0.04); border-radius: 12px; padding: 0.9rem; margin-top: 1rem;">
+                                <p style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.5;">
+                                    💡 <strong>เกร็ดการจัดการ:</strong> ทีมที่บริหารสต็อกได้สมดุล ไม่ปล่อยให้กระดาษขาดมือ จะสามารถเก็บเกี่ยวยอดขายได้เต็มเม็ดเต็มหน่วย
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Customer Feedback -->
+                    <div class="prep-card feedback-card-full">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.4rem; flex-wrap: wrap;">
+                            <h3 style="font-size: 1.35rem; color: var(--gold);">🗣️ เสียงสะท้อนจากคนรักสมุด & ชุมชน</h3>
+                            <span style="font-size: 0.95rem; color: var(--primary-light);">ความคิดเห็นวันนี้</span>
+                        </div>
+                        <p class="prep-subtitle" style="margin-bottom: 1rem;">ข้อคิดเห็นของลูกค้าต่อความหนา ความประณีต ราคา และค่าแรงช่างฝีมือของทีมนี้</p>
+                        <ul id="customer-feedback" class="result-log">
+                            <!-- Dynamic content -->
+                        </ul>
+                    </div>
+                </div>
+
+                <div style="margin-top: 2rem; display: flex; justify-content: flex-end;">
+                    <button id="btn-next-day" class="btn btn-primary" style="padding: 0.9rem 2.4rem; font-size: 1.2rem;">
+                        ☀️ ก้าวสู่วันแข่งถัดไป ➔
+                    </button>
+                </div>
+            </div>
+
+            <!-- PHASE 3: END GAME PODIUM & GRAND FINALE -->
+            <div id="panel-gameover" class="glass-panel fade-in hide">
+                <div style="text-align: center; margin-bottom: 2rem;">
+                    <h2 style="font-size: 2.5rem; margin-bottom: 0.5rem; color: var(--gold);">👑 บทสรุปผลการแข่งขัน 7 วัน</h2>
+                    <p style="color: var(--text-muted); font-size: 1.15rem; max-width: 650px; margin: 0 auto;">
+                        ขอแสดงความยินดีกับทั้ง 7 ทีมที่ร่วมแรงร่วมใจบริหารวิสาหกิจชุมชนสมุดทำมือ! นี่คือผลสัมฤทธิ์และแท่นรับรางวัลเกียรติยศ
+                    </p>
+                </div>
+
+                <!-- PODIUM (แท่นรับรางวัล 🥇🥈🥉) -->
+                <div class="podium-container">
+                    <div class="podium-step step-2">
+                        <span style="font-size: 3rem;">🥈</span>
+                        <h4 style="color: var(--silver); font-size: 1.25rem; margin: 0.5rem 0 0.2rem 0;">รองชนะเลิศอันดับ 1</h4>
+                        <div id="podium-2-name" style="font-size: 1.15rem; font-weight: 700; color: #fff;">ทีม 2</div>
+                        <div id="podium-2-profit" style="color: var(--gold); font-weight: 700; margin-top: 0.4rem;">฿0</div>
+                    </div>
+
+                    <div class="podium-step step-1">
+                        <span style="font-size: 4.2rem;">🥇</span>
+                        <h3 style="color: var(--gold); font-size: 1.5rem; margin: 0.5rem 0 0.2rem 0;">🏆 แชมป์ชนะเลิศ</h3>
+                        <div id="podium-1-name" style="font-size: 1.35rem; font-weight: 800; color: #fff;">ทีม 1</div>
+                        <div id="podium-1-profit" style="color: var(--gold); font-size: 1.25rem; font-weight: 800; margin-top: 0.4rem;">฿0</div>
+                    </div>
+
+                    <div class="podium-step step-3">
+                        <span style="font-size: 2.8rem;">🥉</span>
+                        <h4 style="color: var(--bronze); font-size: 1.25rem; margin: 0.5rem 0 0.2rem 0;">รองชนะเลิศอันดับ 2</h4>
+                        <div id="podium-3-name" style="font-size: 1.15rem; font-weight: 700; color: #fff;">ทีม 3</div>
+                        <div id="podium-3-profit" style="color: var(--gold); font-weight: 700; margin-top: 0.4rem;">฿0</div>
+                    </div>
+                </div>
+
+                <!-- GRAND COMPARISON TABLE -->
+                <div style="margin-top: 2.5rem;">
+                    <h3 style="color: var(--primary-light); font-size: 1.35rem; margin-bottom: 1rem; text-align: center;">
+                        📋 ตารางเปรียบเทียบผลประกอบการสุดท้ายของทั้ง 7 ทีม
+                    </h3>
+                    <div class="leaderboard-table-wrapper">
+                        <table class="leaderboard-table">
+                            <thead>
+                                <tr>
+                                    <th>อันดับสุดท้าย</th>
+                                    <th style="text-align: left;">ชื่อทีม</th>
+                                    <th>กำไรสะสมสุทธิ</th>
+                                    <th>เงินทุนคงเหลือ</th>
+                                    <th>ยอดขายสะสม</th>
+                                    <th>กองทุนหมู่บ้าน</th>
+                                    <th>ชื่อเสียง</th>
+                                </tr>
+                            </thead>
+                            <tbody id="end-table-tbody">
+                                <!-- End Game Team Rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div style="text-align: center; margin-top: 2.5rem;">
+                    <button id="btn-restart-game" class="btn btn-primary" style="padding: 0.9rem 2.8rem; font-size: 1.2rem;">
+                        🔄 เริ่มต้นทัวร์นาเมนต์การแข่งขันรอบใหม่
+                    </button>
+                </div>
+            </div>
+        </section>
     </main>
 
     <!-- EDUCATIONAL GLOSSARY MODAL -->
     <div id="modal-knowledge" class="modal-backdrop hide">
         <div class="modal-card fade-in">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem;">
-                <h3>📖 คลังความรู้: การคิดต้นทุน & กำไร สมุดทำมือ</h3>
+                <h3>📖 คู่มือกลยุทธ์: การคิดต้นทุน & คว้าชัยชนะในการแข่งขัน</h3>
                 <button id="btn-close-modal" class="btn btn-secondary btn-sm" style="border-radius: 50%; width: 40px; height: 40px; padding: 0; font-size: 1.2rem;">✕</button>
             </div>
 
             <div class="glossary-item">
-                <h4>1. ต้นทุนผันแปรต่อเล่ม (Variable Cost)</h4>
-                <p>ต้นทุนที่เพิ่มขึ้นตามจำนวนสมุดที่ผลิต ได้แก่ กระดาษถนอมสายตา, ปกผ้าทอ, ด้ายเย็บกี่ และค่าแรงงานฝีมือช่างเย็บเล่มรายชิ้น ยิ่งทำมาก ต้นทุนรวมยิ่งเพิ่ม แต่ต่อเล่มจะคำนวณจากสูตรการผลิตจริง</p>
+                <h4>1. การตั้งราคา & จุดคุ้มทุน (Break-Even Pricing)</h4>
+                <p>อย่าตั้งราคาต่ำเกินไปจนกำไรบางไม่คุ้มค่าแรง และอย่าตั้งราคาสูงเกินไปจนลูกค้าหนีไปซื้อสมุดโรงงานหรือทีมคู่แข่ง อัตรากำไร (Margin) ที่ 30% - 45% มักจะปลอดภัยที่สุด</p>
             </div>
 
             <div class="glossary-item">
-                <h4>2. ต้นทุนคงที่ (Fixed Cost)</h4>
-                <p>ค่าใช้จ่ายที่เกิดขึ้นไม่ว่าจะขายสมุดได้กี่เล่มก็ตาม เช่น ค่างบโปรโมทออนไลน์, ค่าบูธงานแฟร์ ต้องวางแผนขายให้ได้จำนวนเล่มที่เพียงพอเพื่อไม่ให้ขาดทุน</p>
+                <h4>2. การบริหารสต็อกไม่ให้ขาดช่วง (Avoid Stockout)</h4>
+                <p>การปล่อยให้กระดาษหรือปกหมดกลางคันในวันที่ลูกค้าสนใจเยอะ จะถูกหักคะแนนชื่อเสียงอย่างรุนแรงและสูญเสียยอดขายสะสม คำนวณความต้องการซื้อให้ดีก่อนสั่งของ</p>
             </div>
 
             <div class="glossary-item">
-                <h4>3. กำไรขั้นต้น & อัตรากำไร (Gross Profit & Margin %)</h4>
-                <p>
-                    <strong>สูตร:</strong> กำไรต่อเล่ม = ราคาขาย - ต้นทุนผลิตต่อเล่ม<br>
-                    <strong>สูตร Margin %:</strong> (กำไรต่อเล่ม ÷ ราคาขาย) × 100<br>
-                    งานสมุดทำมือและงานหัตถกรรมสร้างสรรค์ควรมีอัตรากำไรประมาณ 30% - 50% เพื่อให้คุ้มค่ากับเวลาและฝีมือความประณีต
-                </p>
+                <h4>3. ความไวในการปรับตัวต่อวิกฤต (Crisis Adaptation)</h4>
+                <p>เมื่อราคากระดาษพุ่งสูงขึ้นในวันที่ 3 ทีมที่ฉลาดจะคำนวณต้นทุนต่อเล่มใหม่ทันที และพิจารณาปรับจำนวนหน้าหรือปรับราคาขึ้นเล็กน้อยเพื่อป้องกันการขาดทุน</p>
             </div>
 
             <div class="glossary-item">
-                <h4>4. จุดคุ้มทุน (Break-Even Point)</h4>
-                <p>
-                    <strong>สูตร:</strong> จุดคุ้มทุน (เล่ม) = ค่างบการตลาดประจำวัน ÷ กำไรต่อเล่ม<br>
-                    ชี้ให้เห็นว่า วันนี้เราต้องจำหน่ายสมุดให้ได้อย่างน้อยกี่เล่ม จึงจะคุ้มกับงบการตลาดและค่าโฆษณาที่จ่ายไป
-                </p>
-            </div>
-
-            <div class="glossary-item">
-                <h4>5. คุณค่าต่อชุมชน & กองทุนหมู่บ้าน (Social Value)</h4>
-                <p>นอกจากสมาชิกกลุ่มจะได้รับค่าแรงงานฝีมือเย็บเล่มโดยตรงแล้ว ผลกำไร 10% ยังสมทบเข้ากองทุนหมู่บ้านโมกุลเพื่อดูแลสวัสดิการสาธารณะอีกด้วย</p>
+                <h4>4. กองทุนพัฒนาชุมชน & การกระจายรายได้</h4>
+                <p>กำไร 10% จะถูกสะสมเข้ากองทุนหมู่บ้านโมกุล และทุกเล่มที่ขายได้จะสร้างรายได้ค่าแรงงานฝีมือ 15 บาทให้แก่ชาวบ้านโดยตรง ชัยชนะที่แท้จริงคือธุรกิจเติบโตและชุมชนเข้มแข็ง</p>
             </div>
 
             <div style="text-align: right; margin-top: 1.5rem;">
-                <button onclick="document.getElementById('modal-knowledge').classList.add('hide')" class="btn btn-primary">เข้าใจแล้ว กลับไปฝึกต่อ</button>
+                <button onclick="document.getElementById('modal-knowledge').classList.add('hide')" class="btn btn-primary">เข้าใจแล้ว กลับสู่การแข่งขัน</button>
             </div>
         </div>
     </div>
 
     <!-- FOOTER -->
-    <footer style="text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.95rem; border-top: 1px solid var(--card-border);">
-        สมุดทำมือ ไทคูน (Craft Notebook Tycoon) - สื่อการเรียนรู้เชิงปฏิบัติการสำหรับฝึกคิดต้นทุน-กำไร ผลิตภัณฑ์ชุมชนบ้านโมกุล
+    <footer style="text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.95rem; border-top: 1.5px solid var(--card-border);">
+        ระบบแข่งขันจำลองธุรกิจสมุดทำมือ 7 ทีม (7-Team Craft Notebook Tycoon) - ศูนย์การเรียนรู้วิสาหกิจชุมชนบ้านโมกุล
     </footer>
 
     <script src="app.js"></script>
