@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>วิสาหกิจชุมชน ไทคูน (OTOP Tycoon) - ฝึกคิดราคาต้นทุนและกำไรผลิตภัณฑ์ชุมชนบ้านโมกุล</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- HEADER NAVIGATION -->
+    <header>
+        <div class="brand-wrapper">
+            <div class="brand-icon">🌾</div>
+            <div class="brand-text">
+                <h1>วิสาหกิจชุมชน ไทคูน</h1>
+                <span>ระบบจำลองธุรกิจ & ฝึกคิดราคาต้นทุน-กำไร ผลิตภัณฑ์ชุมชนบ้านโมกุล</span>
+            </div>
+        </div>
+
+        <div class="header-actions">
+            <div id="day-indicator" class="day-badge">📅 วันที่: 1 / 7</div>
+            <button id="btn-knowledge" class="btn btn-secondary btn-sm" title="คลิกเพื่อดูคู่มือและสูตรการคิดต้นทุน">📖 คลังความรู้ต้นทุน</button>
+            <button id="btn-restart" class="btn btn-secondary btn-sm">🔄 เริ่มต้นใหม่</button>
+        </div>
+    </header>
+
+    <main>
+        <!-- PRODUCT SWITCHER BAR -->
+        <div class="product-selector-bar">
+            <div class="product-selector-title">
+                <span>🎯 เลือกผลิตภัณฑ์ชุมชนที่ต้องการฝึกคิดต้นทุน:</span>
+            </div>
+            <div class="product-chips">
+                <button class="product-chip active" data-product="banana">
+                    <span>🍌 กล้วยเบรกแตกอบเนยสมุนไพร</span>
+                </button>
+                <button class="product-chip" data-product="chili">
+                    <span>🌶️ น้ำพริกสมุนไพรปลาย่างโบราณ</span>
+                </button>
+                <button class="product-chip" data-product="soap">
+                    <span>🧼 สบู่สมุนไพรขมิ้นชันน้ำผึ้งป่า</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- TOP DASHBOARD METRICS -->
+        <div class="dashboard-bar">
+            <div class="stat-card">
+                <div class="stat-icon">💰</div>
+                <div class="stat-info">
+                    <div class="label">เงินทุนหมุนเวียนในมือ</div>
+                    <div class="value" id="val-cash">฿1,200</div>
+                </div>
+            </div>
+
+            <div class="stat-card accent-card">
+                <div class="stat-icon">⭐</div>
+                <div class="stat-info">
+                    <div class="label">ชื่อเสียง & ความเชื่อมั่น OTOP</div>
+                    <div class="value" id="val-reputation">50%</div>
+                </div>
+            </div>
+
+            <div class="stat-card community-card">
+                <div class="stat-icon">🤝</div>
+                <div class="stat-info">
+                    <div class="label">กองทุนพัฒนาหมู่บ้านสะสม</div>
+                    <div class="value" id="val-village-fund">฿0</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon">📦</div>
+                <div class="stat-info">
+                    <div class="label">สต็อกวัตถุดิบคงคลัง</div>
+                    <div class="value" id="val-stock-summary" style="font-size: 0.92rem; font-weight: 600; line-height: 1.4;">กำลังโหลด...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SPECIAL EVENT BANNER -->
+        <div id="event-banner" class="event-banner hide">
+            <div class="event-icon-box" id="event-icon">☀️</div>
+            <div class="event-content">
+                <h3 id="event-title">เหตุการณ์ประจำวัน</h3>
+                <p id="event-description">คำอธิบายสถานการณ์ตลาดและปัจจัยทางเศรษฐกิจชุมชนประจำวัน</p>
+            </div>
+        </div>
+
+        <!-- PHASE 1: PREPARATION & PRICING PANEL -->
+        <div id="panel-prep" class="glass-panel fade-in">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <span>⚙️ วางแผนการผลิตและคิดราคาต้นทุนประจำวัน:</span>
+                    <span id="active-product-title" style="color: var(--gold); font-size: 1.15rem;"></span>
+                </div>
+            </div>
+
+            <div class="grid-3">
+                <!-- 1. Purchase Materials -->
+                <div class="prep-card">
+                    <div>
+                        <h3>🛒 1. จัดซื้อวัตถุดิบ & บรรจุภัณฑ์</h3>
+                        <p class="prep-subtitle">ราคาผันผวนตามฤดูกาล ซื้อเก็บไว้เป็นสต็อกเพื่อรองรับการผลิต</p>
+
+                        <!-- Material 1 -->
+                        <div class="material-row">
+                            <div class="material-header">
+                                <span class="material-name" id="label-buy-mat1">วัตถุดิบ 1</span>
+                                <span class="material-cost" id="price-buy-mat1">฿0 / หน่วย</span>
+                            </div>
+                            <div class="quantity-control">
+                                <button class="btn btn-secondary" onclick="adjustBuy('mat1', -5)">-5</button>
+                                <button class="btn btn-secondary" onclick="adjustBuy('mat1', -1)">-1</button>
+                                <input type="number" id="buy-mat1" class="input-number" value="0" min="0" readonly>
+                                <button class="btn btn-secondary" onclick="adjustBuy('mat1', 1)">+1</button>
+                                <button class="btn btn-secondary" onclick="adjustBuy('mat1', 5)">+5</button>
+                            </div>
+                        </div>
+
+                        <!-- Material 2 -->
+                        <div class="material-row">
+                            <div class="material-header">
+                                <span class="material-name" id="label-buy-mat2">วัตถุดิบ 2</span>
+                                <span class="material-cost" id="price-buy-mat2">฿0 / หน่วย</span>
+                            </div>
+                            <div class="quantity-control">
+                                <button class="btn btn-secondary" onclick="adjustBuy('mat2', -2)">-2</button>
+                                <button class="btn btn-secondary" onclick="adjustBuy('mat2', -1)">-1</button>
+                                <input type="number" id="buy-mat2" class="input-number" value="0" min="0" readonly>
+                                <button class="btn btn-secondary" onclick="adjustBuy('mat2', 1)">+1</button>
+                                <button class="btn btn-secondary" onclick="adjustBuy('mat2', 2)">+2</button>
+                            </div>
+                        </div>
+
+                        <!-- Material 3 (Package) -->
+                        <div class="material-row">
+                            <div class="material-header">
+                                <span class="material-name" id="label-buy-mat3">บรรจุภัณฑ์ & ฉลาก OTOP</span>
+                                <span class="material-cost" id="price-buy-mat3">฿0 / ใบ</span>
+                            </div>
+                            <div class="quantity-control">
+                                <button class="btn btn-secondary" onclick="adjustBuy('mat3', -10)">-10</button>
+                                <button class="btn btn-secondary" onclick="adjustBuy('mat3', -5)">-5</button>
+                                <input type="number" id="buy-mat3" class="input-number" value="0" min="0" readonly>
+                                <button class="btn btn-secondary" onclick="adjustBuy('mat3', 5)">+5</button>
+                                <button class="btn btn-secondary" onclick="adjustBuy('mat3', 10)">+10</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="border-top: 1px dashed rgba(82, 183, 136, 0.3); padding-top: 0.8rem; margin-top: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 0.9rem; color: var(--text-muted);">ยอดสั่งซื้อวันนี้:</span>
+                        <span id="total-purchase" style="color: var(--gold); font-size: 1.15rem; font-weight: 700;">฿0.00</span>
+                    </div>
+                </div>
+
+                <!-- 2. Recipe & Cost Breakdown -->
+                <div class="prep-card">
+                    <div>
+                        <h3>🧪 2. ปรับสูตร & วิเคราะห์ต้นทุนต่อชิ้น</h3>
+                        <p class="prep-subtitle">สูตรเข้มข้นช่วยเพิ่มคุณภาพและความพึงพอใจ แต่ทำให้ต้นทุนสูงขึ้น</p>
+
+                        <!-- Slider Mat 1 -->
+                        <div class="slider-group">
+                            <div class="slider-label">
+                                <span id="name-rec-mat1">วัตถุดิบ 1:</span>
+                                <span class="slider-val" id="lbl-rec-mat1">0.4</span>
+                            </div>
+                            <input type="range" id="rec-mat1" min="0.1" max="1.0" step="0.05" value="0.4">
+                        </div>
+
+                        <!-- Slider Mat 2 -->
+                        <div class="slider-group">
+                            <div class="slider-label">
+                                <span id="name-rec-mat2">วัตถุดิบ 2:</span>
+                                <span class="slider-val" id="lbl-rec-mat2">0.2</span>
+                            </div>
+                            <input type="range" id="rec-mat2" min="0.1" max="0.5" step="0.05" value="0.2">
+                        </div>
+
+                        <!-- Material 3 Package -->
+                        <div class="slider-group">
+                            <div class="slider-label">
+                                <span id="name-rec-mat3">บรรจุภัณฑ์ & ฉลาก:</span>
+                                <span class="slider-val"><span id="lbl-rec-mat3">1</span> ชิ้น</span>
+                            </div>
+                            <p style="font-size: 0.78rem; color: var(--text-muted);">* 1 ชิ้นบรรจุภัณฑ์ต่อ 1 หน่วยสินค้าพร้อมขาย</p>
+                        </div>
+
+                        <!-- Live Cost Breakdown Box -->
+                        <div class="cost-calculator-box">
+                            <div style="font-size: 0.85rem; font-weight: 700; color: var(--primary-light); margin-bottom: 0.5rem;">
+                                📋 โครงสร้างต้นทุนการผลิตต่อหน่วย (Unit Cost):
+                            </div>
+                            <div class="calc-row">
+                                <span style="color: var(--text-muted);">- วัตถุดิบหลัก:</span>
+                                <span id="calc-cost-mat1">฿0.00</span>
+                            </div>
+                            <div class="calc-row">
+                                <span style="color: var(--text-muted);">- ส่วนผสมเสริม:</span>
+                                <span id="calc-cost-mat2">฿0.00</span>
+                            </div>
+                            <div class="calc-row">
+                                <span style="color: var(--text-muted);">- ค่าบรรจุภัณฑ์ & ฉลาก:</span>
+                                <span id="calc-cost-mat3">฿0.00</span>
+                            </div>
+                            <div class="calc-row">
+                                <span style="color: var(--text-muted);">- ค่าแรงงานแม่บ้านชุมชน:</span>
+                                <span id="calc-cost-labor">฿0.00</span>
+                            </div>
+                            <div class="calc-row total">
+                                <span>รวมต้นทุนผลิตต่อชิ้น:</span>
+                                <span id="calc-total-unit-cost" style="color: #fff;">฿0.00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Pricing, Profit & Marketing -->
+                <div class="prep-card">
+                    <div>
+                        <h3>📢 3. ตั้งราคาขาย & ช่องทางการตลาด</h3>
+                        <p class="prep-subtitle">ฝึกกำหนดราคาขายให้มีกำไรคุ้มทุน และเลือกช่องทางกระจายสินค้า</p>
+
+                        <div style="margin-bottom: 1.2rem;">
+                            <label id="unit-badge" style="display: block; font-size: 0.9rem; margin-bottom: 0.4rem; color: var(--text-muted);">
+                                ราคาขายต่อชิ้น (บาท)
+                            </label>
+                            <div style="display: flex; align-items: center; gap: 0.6rem;">
+                                <input type="number" id="price-per-unit" class="input-number" style="width: 110px; font-size: 1.15rem;" value="35" min="5" max="300">
+                                <span style="font-weight: 600;" id="unit-label">บาท</span>
+                            </div>
+                        </div>
+
+                        <!-- Live Profit & Break-Even Widget -->
+                        <div class="cost-calculator-box" style="background: rgba(233, 196, 106, 0.08); border-color: var(--gold);">
+                            <div style="font-size: 0.85rem; font-weight: 700; color: var(--gold); margin-bottom: 0.5rem;">
+                                💡 วิเคราะห์ผลกำไร & จุดคุ้มทุน:
+                            </div>
+                            <div class="calc-row">
+                                <span style="color: var(--text-muted);">กำไรขั้นต้นต่อชิ้น:</span>
+                                <span id="calc-profit-unit" style="font-weight: 700;">฿0.00</span>
+                            </div>
+                            <div class="calc-row">
+                                <span style="color: var(--text-muted);">สถานะอัตรากำไร (Margin):</span>
+                                <span id="margin-badge" class="margin-pill good">คำนวณ...</span>
+                            </div>
+                            <div class="calc-row">
+                                <span style="color: var(--text-muted);">จุดคุ้มทุนค่าการตลาดวันนี้:</span>
+                                <span id="calc-breakeven" style="font-weight: 600; color: var(--gold);">0 ชิ้น</span>
+                            </div>
+                        </div>
+
+                        <!-- Marketing Channel -->
+                        <div style="margin-top: 1.2rem;">
+                            <label style="display: block; font-size: 0.88rem; margin-bottom: 0.4rem; color: var(--text-muted);">
+                                ช่องทางการโปรโมท & กระจายสินค้าวันนี้:
+                            </label>
+                            <select id="marketing-select" class="form-select">
+                                <!-- Generated dynamically -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 1.5rem;">
+                        <button id="btn-open-market" class="btn btn-primary" style="width: 100%; padding: 0.85rem; font-size: 1.05rem;">
+                            🚀 เริ่มเปิดรอบการผลิตและจำหน่ายวันนี้
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PHASE 2: RESULTS PANEL -->
+        <div id="panel-results" class="glass-panel fade-in hide">
+            <div class="panel-header">
+                <div class="panel-title" style="color: var(--success);">
+                    <span>📊 ผลประกอบการและบัญชีรายรับ-รายจ่ายชุมชนประจำวันนี้</span>
+                </div>
+            </div>
+
+            <div class="grid-3">
+                <!-- Financial Summary -->
+                <div class="prep-card">
+                    <h3>💰 สรุปงบการเงินประจำวัน</h3>
+                    <table class="financial-table" style="margin-top: 0.8rem;">
+                        <tr>
+                            <td>ลูกค้าที่สนใจซื้อทั้งหมด</td>
+                            <td id="res-total-demand" style="text-align: right; font-weight:700;">0 คน</td>
+                        </tr>
+                        <tr>
+                            <td>ยอดขายที่ทำได้จริง</td>
+                            <td id="res-sales-qty" style="text-align: right; font-weight:700; color: var(--success);">0 ชิ้น</td>
+                        </tr>
+                        <tr style="border-top: 2px solid rgba(82, 183, 136, 0.4);">
+                            <td>รายรับรวมจากการขาย (Revenue)</td>
+                            <td id="res-revenue" style="text-align: right; font-weight:700; color: var(--success);">+฿0.00</td>
+                        </tr>
+                        <tr>
+                            <td>ค่าจัดซื้อวัตถุดิบ & แพ็กเกจ</td>
+                            <td id="res-cost-purchases" style="text-align: right; color: var(--danger);">-฿0.00</td>
+                        </tr>
+                        <tr>
+                            <td>ค่างบโฆษณา/ช่องทางการตลาด</td>
+                            <td id="res-cost-marketing" style="text-align: right; color: var(--danger);">-฿0.00</td>
+                        </tr>
+                        <tr>
+                            <td>หักสมทบกองทุนพัฒนาหมู่บ้าน (10%)</td>
+                            <td id="res-village-fund-deduct" style="text-align: right; color: var(--warning);">-฿0.00</td>
+                        </tr>
+                        <tr style="border-top: 2px solid var(--card-border);">
+                            <td style="font-weight: 700; font-size: 1.05rem;">กำไรสุทธิประจำวัน</td>
+                            <td id="res-net-profit" style="text-align: right; font-weight:700; font-size: 1.25rem;">฿0.00</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Customer Feedback -->
+                <div class="prep-card">
+                    <h3>🗣️ เสียงสะท้อนจากลูกค้า & ชุมชน</h3>
+                    <p class="prep-subtitle">ความคิดเห็นของลูกค้าต่อคุณภาพ รสชาติ ราคา และการกระจายรายได้</p>
+                    <ul id="customer-feedback" class="result-log">
+                        <!-- Dynamic content -->
+                    </ul>
+                </div>
+
+                <!-- Inventory Balance -->
+                <div class="prep-card">
+                    <h3>📦 วัตถุดิบคงเหลือสะสมในคลัง</h3>
+                    <table class="financial-table" style="margin-top: 0.8rem;">
+                        <tr>
+                            <td id="res-label-stock-mat1">วัตถุดิบ 1</td>
+                            <td id="res-stock-mat1" style="text-align: right; font-weight: 600;">0</td>
+                        </tr>
+                        <tr>
+                            <td id="res-label-stock-mat2">วัตถุดิบ 2</td>
+                            <td id="res-stock-mat2" style="text-align: right; font-weight: 600;">0</td>
+                        </tr>
+                        <tr>
+                            <td id="res-label-stock-mat3">บรรจุภัณฑ์ & ฉลาก</td>
+                            <td id="res-stock-mat3" style="text-align: right; font-weight: 600;">0</td>
+                        </tr>
+                    </table>
+                    <div style="background: rgba(255, 255, 255, 0.03); border-radius: 10px; padding: 0.8rem; margin-top: 1rem;">
+                        <p style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.45;">
+                            💡 <strong>เกร็ดความรู้:</strong> วัตถุดิบที่เหลือจะถูกยกยอดไปใช้ในวันถัดไปโดยไม่มีค่าเสื่อมสภาพในสัปดาห์แรก การวางแผนสต็อกไม่ให้ขาดช่วงช่วยรักษาโอกาสในการขายได้สูงสุด
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 2rem; display: flex; justify-content: flex-end;">
+                <button id="btn-next-day" class="btn btn-primary" style="padding: 0.8rem 2rem; font-size: 1.05rem;">
+                    ☀️ ก้าวสู่วันถัดไป (ดำเนินงานต่อ) ➔
+                </button>
+            </div>
+        </div>
+
+        <!-- PHASE 3: END GAME REPORT -->
+        <div id="panel-gameover" class="glass-panel end-game-card fade-in hide">
+            <h2 style="font-size: 2.2rem; margin-bottom: 0.5rem; color: var(--gold);">👑 บทสรุปผลการดำเนินงาน 7 วัน</h2>
+            <p style="color: var(--text-muted); margin-bottom: 2rem; max-width: 600px; margin-left: auto; margin-right: auto;">
+                ขอแสดงความยินดีกับความมุ่งมั่นในการบริหารวิสาหกิจชุมชน! นี่คือรายงานสรุปทักษะการคำนวณต้นทุนและการบริหารกำไรของท่าน
+            </p>
+
+            <div class="grade-badge" id="end-grade">A+</div>
+            <h3 id="end-status-title" style="font-size: 1.45rem; margin-bottom: 0.8rem; color: var(--primary-light);">สถานะการประเมิน</h3>
+            <p id="end-commentary" style="color: var(--text-muted); max-width: 650px; margin: 0 auto 2.5rem auto; line-height: 1.5; font-size: 0.95rem;"></p>
+
+            <div style="max-width: 620px; margin: 0 auto 2.5rem auto; background: rgba(0, 0, 0, 0.3); border-radius: 16px; padding: 1.5rem; border: 1px solid var(--card-border);">
+                <table class="financial-table">
+                    <tr>
+                        <td>เงินทุนหมุนเวียนคงเหลือสุทธิ</td>
+                        <td id="end-cash" style="text-align: right; font-weight:700; color: var(--success); font-size:1.15rem;">฿0.00</td>
+                    </tr>
+                    <tr>
+                        <td>กำไรสะสมสุทธิตลอด 7 วัน</td>
+                        <td id="end-profit" style="text-align: right; font-weight:700; color: var(--success); font-size:1.15rem;">฿0.00</td>
+                    </tr>
+                    <tr>
+                        <td>เงินสะสมเข้ากองทุนพัฒนาหมู่บ้านโมกุล</td>
+                        <td id="end-village-fund" style="text-align: right; font-weight:700; color: var(--gold); font-size:1.15rem;">฿0.00</td>
+                    </tr>
+                    <tr>
+                        <td>รายได้ค่าแรงงานที่กระจายสู่ชุมชน</td>
+                        <td id="end-labor-paid" style="text-align: right; font-weight:700; color: var(--primary-light); font-size:1.15rem;">฿0.00</td>
+                    </tr>
+                    <tr>
+                        <td>ชื่อเสียงและความไว้วางใจ OTOP</td>
+                        <td id="end-reputation" style="text-align: right; font-weight:700;">0%</td>
+                    </tr>
+                    <tr>
+                        <td>จำนวนสินค้าที่จำหน่ายได้สะสม</td>
+                        <td id="end-units-sold" style="text-align: right; font-weight:700;">0 ชิ้น</td>
+                    </tr>
+                </table>
+            </div>
+
+            <button id="btn-restart-game" class="btn btn-primary" style="padding: 0.8rem 2.2rem; font-size: 1.1rem;">
+                🔄 ฝึกฝนรอบใหม่ / ลองเปลี่ยนสินค้าอื่น
+            </button>
+        </div>
+    </main>
+
+    <!-- EDUCATIONAL GLOSSARY MODAL -->
+    <div id="modal-knowledge" class="modal-backdrop hide">
+        <div class="modal-card fade-in">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem;">
+                <h3>📖 คลังความรู้: การคิดราคาต้นทุน & กำไรธุรกิจชุมชน</h3>
+                <button id="btn-close-modal" class="btn btn-secondary btn-sm" style="border-radius: 50%; width: 36px; height: 36px; padding: 0;">✕</button>
+            </div>
+
+            <div class="glossary-item">
+                <h4>1. ต้นทุนผันแปร (Variable Cost)</h4>
+                <p>ต้นทุนที่เปลี่ยนแปลงตามจำนวนการผลิต เช่น วัตถุดิบหลัก, ส่วนผสมปรุงแต่ง, บรรจุภัณฑ์ และค่าแรงงานแม่บ้านที่คิดเป็นรายชิ้น ยิ่งผลิตมาก ยอดรวมยิ่งเพิ่ม แต่ต่อหน่วยมักจะคงที่</p>
+            </div>
+
+            <div class="glossary-item">
+                <h4>2. ต้นทุนคงที่ (Fixed Cost)</h4>
+                <p>ค่าใช้จ่ายที่ต้องจ่ายไม่ว่าจะขายได้กี่ชิ้นก็ตาม เช่น ค่างบการตลาด, ค่าเช่าบูธรายวัน, ค่าป้ายร้านค้า เพื่อให้ได้ผลลัพธ์ที่ดีที่สุด ต้องขายสินค้าให้ได้จำนวนมากพอที่จะครอบคลุมต้นทุนส่วนนี้</p>
+            </div>
+
+            <div class="glossary-item">
+                <h4>3. กำไรขั้นต้น & อัตรากำไร (Gross Profit & Margin %)</h4>
+                <p>
+                    <strong>สูตร:</strong> กำไรต่อชิ้น = ราคาขาย - ต้นทุนผลิตต่อชิ้น<br>
+                    <strong>สูตร Margin %:</strong> (กำไรต่อชิ้น ÷ ราคาขาย) × 100<br>
+                    สินค้า OTOP และแปรรูปชุมชนควรมีอัตรากำไรไม่ต่ำกว่า 25% - 40% เพื่อรองรับความเสี่ยงจากราคาวัตถุดิบการเกษตรที่ผันผวน
+                </p>
+            </div>
+
+            <div class="glossary-item">
+                <h4>4. จุดคุ้มทุน (Break-Even Point)</h4>
+                <p>
+                    <strong>สูตร:</strong> จุดคุ้มทุน (ชิ้น) = ต้นทุนคงที่ (เช่น ค่าการตลาด) ÷ กำไรต่อชิ้น<br>
+                    บอกให้ทราบว่า วันนี้เราต้องขายสินค้าให้ได้กี่ชิ้นจึงจะคุ้มกับเงินค่างบการตลาดและค่าใช้จ่ายประจำวันนั้นๆ
+                </p>
+            </div>
+
+            <div class="glossary-item">
+                <h4>5. กองทุนพัฒนาหมู่บ้าน (Social Enterprise Dividend)</h4>
+                <p>หัวใจสำคัญของวิสาหกิจชุมชน คือการจัดสรรผลกำไรส่วนหนึ่ง (ในเกมนี้จำลองที่ 10%) คืนสู่กองทุนชุมชน เพื่อนำไปพัฒนาสาธารณประโยชน์ ช่วยเหลือผู้สูงอายุ และสร้างความเข้มแข็งอย่างยั่งยืน</p>
+            </div>
+
+            <div style="text-align: right; margin-top: 1.5rem;">
+                <button onclick="document.getElementById('modal-knowledge').classList.add('hide')" class="btn btn-primary">เข้าใจแล้ว กลับไปฝึกจำลองต่อ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer style="text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.85rem; border-top: 1px solid var(--card-border);">
+        วิสาหกิจชุมชน ไทคูน (OTOP Tycoon) - สื่อการเรียนรู้เชิงปฏิบัติการสำหรับฝึกคิดต้นทุน-กำไร และการบริหารวิสาหกิจชุมชน
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>
